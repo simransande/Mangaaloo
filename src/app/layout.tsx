@@ -18,6 +18,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { ToastProvider } from '@/lib/contexts/ToastContext';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -27,8 +29,10 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <GoogleAnalytics />
-        {children}
-</body>
+        <ToastProvider>
+          {children}
+        </ToastProvider>
+      </body>
     </html>
   );
 }

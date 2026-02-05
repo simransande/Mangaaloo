@@ -2,6 +2,7 @@ import { supabaseClient } from '../client';
 import type { UserProfile } from '../types';
 
 export const authService = {
+  supabaseClient,
   // Sign up
   async signUp(email: string, password: string, fullName: string) {
     const { data, error } = await supabaseClient.auth.signUp({
@@ -49,7 +50,7 @@ export const authService = {
       if (!session) {
         return null;
       }
-      
+
       // Only call getUser if session exists
       const { data: { user }, error } = await supabaseClient.auth.getUser();
       if (error) throw error;

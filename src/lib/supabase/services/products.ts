@@ -13,6 +13,18 @@ export const productService = {
     return data as Product[];
   },
 
+  // Get trending products (limited)
+  async getTrending(limit: number = 8) {
+    const { data, error } = await supabaseClient
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return data as Product[];
+  },
+
   // Get product by ID
   async getById(id: string) {
     const { data, error } = await supabaseClient
@@ -74,14 +86,14 @@ export const productService = {
 
   // Update stock
   async updateStock(id: string, quantity: number) {
-    const stockStatus: 'in-stock' | 'low-stock' | 'out-of-stock' = 
+    const stockStatus: 'in-stock' | 'low-stock' | 'out-of-stock' =
       quantity === 0 ? 'out-of-stock' : quantity < 10 ? 'low-stock' : 'in-stock';
 
     const { data, error } = await supabaseClient
       .from('products')
-      .update({ 
+      .update({
         stock_quantity: quantity,
-        stock_status: stockStatus 
+        stock_status: stockStatus
       })
       .eq('id', id)
       .select()

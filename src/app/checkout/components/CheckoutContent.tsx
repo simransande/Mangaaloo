@@ -10,7 +10,7 @@ import { cartService } from '@/lib/supabase/services/cart';
 import { orderService } from '@/lib/supabase/services/orders';
 import { customerService } from '@/lib/supabase/services/customers';
 import type { UserProfile } from '@/lib/supabase/types';
-import { ecommerceTracking } from '@/lib/analytics';
+import { ecommerceTracking, funnelTracking } from '@/lib/analytics';
 
 interface CartItemWithProduct {
   id: string;
@@ -51,7 +51,7 @@ function CheckoutInner() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         // Try to get current user
         let user = null;
         try {
@@ -85,7 +85,7 @@ function CheckoutInner() {
 
         // Fetch cart items from database
         const dbCartItems = await cartService.getCartItems(user.id);
-        
+
         // Transform to match interface
         const formattedItems: CartItemWithProduct[] = dbCartItems.map((item: any) => ({
           id: item.id,
@@ -108,7 +108,7 @@ function CheckoutInner() {
         }
 
         // Track checkout step
-        ecommerceTracking.checkoutStep(1, 'Shipping Information');
+        funnelTracking.checkoutStep(1, 'Shipping Information');
       } catch (err: any) {
         console.error('Error fetching data:', err);
         setError(err.message || 'Failed to load checkout data');
@@ -248,30 +248,30 @@ function CheckoutInner() {
       }));
 
       console.log('Creating order with data:', orderData);
-      const order = await orderService.create(orderData as any, orderItems as any);
+      const order = await orderService.create(orderData, orderItems);
       console.log('Order created successfully:', order.order.id);
 
       // Track purchase event
-      ecommerceTracking.purchase(
-        order.order.order_number,
-        finalAmount,
-        cartItems.map(item => ({
+      ecommerceTracking.purchase({
+        transactionId: order.order.order_number,
+        value: finalAmount,
+        items: cartItems.map(item => ({
           id: item.productId,
           name: item.name,
           price: item.discountedPrice || item.price,
           quantity: item.quantity,
         }))
-      );
+      });
 
       // Clear cart
       await cartService.clearCart(user.id);
       localStorage.removeItem('cart');
-      
+
       // Dispatch cart update event
       window.dispatchEvent(new Event('cartUpdated'));
 
       // Redirect to order confirmation
-      router.push(`/order-confirmation?orderId=${order.id}`);
+      router.push(`/order-confirmation?orderId=${order.order.id}`);
     } catch (err: any) {
       console.error('Error placing order:', err);
       setError(err.message || 'Failed to place order. Please try again.');

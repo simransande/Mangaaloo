@@ -71,8 +71,8 @@ export default function OffersSection() {
         {error && (
           <div className="text-center py-10">
             <p className="text-red-600 mb-4">{error}</p>
-            <button 
-              onClick={() => window.location.reload()} 
+            <button
+              onClick={() => window.location.reload()}
               className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
             >
               Retry
@@ -87,11 +87,10 @@ export default function OffersSection() {
               <Link
                 key={offer.id}
                 href={offer.link || '/product-listing'}
-                className={`group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 ${
-                  isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-                }`}
+                className={`group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+                  }`}
                 style={{
-                  transitionDelay: `${index * 100}ms`,
+                  transitionDelay: `${index * 50}ms`,
                 }}
               >
                 {/* Image */}
@@ -101,7 +100,7 @@ export default function OffersSection() {
                     alt={offer.image_alt}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   />
-                  
+
                   {/* Overlay Gradient */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 

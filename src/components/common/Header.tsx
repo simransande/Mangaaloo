@@ -11,6 +11,8 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -22,18 +24,37 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    const checkAdminStatus = async () => {
+    const checkAuthStatus = async () => {
       try {
-        let user = await authService?.getCurrentUser();
-        if (user) {
-          const adminStatus = await authService?.isAdmin(user?.id);
+        const currentUser = await authService?.getCurrentUser();
+        setUser(currentUser);
+        if (currentUser) {
+          const adminStatus = await authService?.isAdmin(currentUser.id);
           setIsAdmin(adminStatus);
         }
       } catch (error) {
-        console.log('Not authenticated or error checking admin status');
+        console.log('Not authenticated or error checking auth status');
       }
     };
-    checkAdminStatus();
+    checkAuthStatus();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = authService.supabaseClient.auth.onAuthStateChange(
+      async (_event: any, session: any) => {
+        if (session?.user) {
+          setUser(session.user);
+          const adminStatus = await authService.isAdmin(session.user.id);
+          setIsAdmin(adminStatus);
+        } else {
+          setUser(null);
+          setIsAdmin(false);
+        }
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Fetch cart count dynamically
@@ -83,6 +104,34 @@ export default function Header() {
     };
   }, []);
 
+  // Fetch wishlist count
+  useEffect(() => {
+    const updateWishlistCount = () => {
+      const wishlist = localStorage.getItem('wishlist');
+      if (wishlist) {
+        const items = JSON.parse(wishlist);
+        setWishlistCount(items.length);
+      } else {
+        setWishlistCount(0);
+      }
+    };
+
+    updateWishlistCount();
+
+    const handleWishlistUpdate = () => {
+      updateWishlistCount();
+    };
+
+    // Listen for both custom event and storage changes
+    window.addEventListener('wishlistUpdated', handleWishlistUpdate);
+    window.addEventListener('storage', handleWishlistUpdate);
+
+    return () => {
+      window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
+      window.removeEventListener('storage', handleWishlistUpdate);
+    };
+  }, []);
+
   const navLinks = [
     { id: 'nav_shop', label: 'Shop', href: '/product-listing' },
     { id: 'nav_categories', label: 'Categories', href: '/product-listing' },
@@ -92,11 +141,10 @@ export default function Header() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled
-          ? 'bg-white shadow-md'
-          : 'bg-white/95 backdrop-blur-sm'
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
+        ? 'bg-white shadow-md'
+        : 'bg-white/95 backdrop-blur-sm'
+        }`}
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
@@ -135,6 +183,20 @@ export default function Header() {
               <Icon name="MagnifyingGlassIcon" size={22} />
             </button>
 
+            {/* Wishlist Icon with Badge */}
+            <Link
+              href="/wishlist"
+              className="relative p-2 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Wishlist"
+            >
+              <Icon name="HeartIcon" size={22} />
+              {wishlistCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {wishlistCount}
+                </span>
+              )}
+            </Link>
+
             {/* Cart Icon with Badge */}
             <Link
               href="/cart"
@@ -163,11 +225,12 @@ export default function Header() {
 
             {/* User Icon */}
             <Link
-              href="/login"
+              href={user ? "/user-dashboard" : "/login"}
               className="hidden md:block p-2 hover:bg-gray-100 rounded-full transition-colors"
-              aria-label="User account"
+              aria-label={user ? "Account Dashboard" : "Login"}
+              title={user ? "My Dashboard" : "Login"}
             >
-              <Icon name="UserIcon" size={22} />
+              <Icon name="UserIcon" size={22} className={user ? "text-primary" : "text-gray-900"} />
             </Link>
 
             {/* Mobile Menu Button */}
@@ -209,11 +272,11 @@ export default function Header() {
                 </Link>
               )}
               <Link
-                href="/login"
+                href={user ? "/user-dashboard" : "/login"}
                 className="text-base font-medium text-gray-900 hover:text-primary transition-colors py-2"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                My Account
+                {user ? "My Dashboard" : "Login / Register"}
               </Link>
             </nav>
           </div>

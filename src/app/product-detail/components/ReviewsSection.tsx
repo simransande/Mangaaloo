@@ -5,12 +5,14 @@ import Icon from '@/components/ui/AppIcon';
 import { reviewService } from '@/lib/supabase/services/reviews';
 import { authService } from '@/lib/supabase/services/auth';
 import type { ReviewWithUser } from '@/lib/supabase/types';
+import { useToast } from '@/lib/contexts/ToastContext';
 
 interface ReviewsSectionProps {
   productId: string;
 }
 
 export default function ReviewsSection({ productId }: ReviewsSectionProps) {
+  const { showToast } = useToast();
   const [reviews, setReviews] = useState<ReviewWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -18,7 +20,7 @@ export default function ReviewsSection({ productId }: ReviewsSectionProps) {
   const [userReview, setUserReview] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
   const [averageRating, setAverageRating] = useState({ average: 0, count: 0 });
-  
+
   // Form state
   const [rating, setRating] = useState(5);
   const [title, setTitle] = useState('');
@@ -51,7 +53,7 @@ export default function ReviewsSection({ productId }: ReviewsSectionProps) {
     try {
       const user = await authService.getCurrentUser();
       setCurrentUser(user);
-      
+
       if (user) {
         const existingReview = await reviewService.getUserReview(productId, user.id);
         setUserReview(existingReview);
@@ -63,14 +65,14 @@ export default function ReviewsSection({ productId }: ReviewsSectionProps) {
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!currentUser) {
-      alert('Please login to submit a review');
+      showToast('Please login to submit a review', 'warning');
       return;
     }
 
     if (!title.trim() || !content.trim()) {
-      alert('Please fill in all fields');
+      showToast('Please fill in all fields', 'warning');
       return;
     }
 
@@ -95,10 +97,10 @@ export default function ReviewsSection({ productId }: ReviewsSectionProps) {
       const newUserReview = await reviewService.getUserReview(productId, currentUser.id);
       setUserReview(newUserReview);
 
-      alert('Review submitted successfully! It will be visible after admin approval.');
+      showToast('Review submitted successfully! It will be visible after admin approval.', 'success');
     } catch (err: any) {
       console.error('Error submitting review:', err);
-      alert(err.message || 'Failed to submit review');
+      showToast(err.message || 'Failed to submit review', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -149,7 +151,7 @@ export default function ReviewsSection({ productId }: ReviewsSectionProps) {
               Based on {averageRating.count} {averageRating.count === 1 ? 'review' : 'reviews'}
             </p>
           </div>
-          
+
           {currentUser && !userReview && (
             <button
               onClick={() => setShowForm(!showForm)}
@@ -182,7 +184,7 @@ export default function ReviewsSection({ productId }: ReviewsSectionProps) {
       {showForm && currentUser && !userReview && (
         <form onSubmit={handleSubmitReview} className="glass-panel p-6 rounded-lg space-y-4">
           <h3 className="font-heading font-bold text-xl">Write Your Review</h3>
-          
+
           <div>
             <label className="block text-sm font-semibold mb-2">Rating</label>
             {renderStars(rating, 24, true, setRating)}

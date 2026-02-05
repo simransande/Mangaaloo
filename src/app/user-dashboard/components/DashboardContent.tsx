@@ -21,18 +21,18 @@ export default function DashboardContent() {
     const fetchUserData = async () => {
       try {
         setLoading(true);
-        
+
         // First check if we have a session
         const { data: { session }, error: sessionError } = await authService.getCurrentSession();
-        
+
         if (sessionError || !session) {
           console.log('No active session, redirecting to login');
           router.push('/login');
           return;
         }
-        
+
         const user = await authService.getCurrentUser();
-        
+
         if (!user) {
           router.push('/login');
           return;
@@ -130,8 +130,8 @@ export default function DashboardContent() {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
         <p className="text-red-600 mb-4">{error}</p>
-        <button 
-          onClick={() => window.location.reload()} 
+        <button
+          onClick={() => window.location.reload()}
           className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
         >
           Retry
@@ -167,10 +167,9 @@ export default function DashboardContent() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'text-primary border-b-2 border-primary' :'text-gray-600 hover:text-gray-900'
-                }`}
+                className={`flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap ${activeTab === tab.id
+                    ? 'text-primary border-b-2 border-primary' : 'text-gray-600 hover:text-gray-900'
+                  }`}
               >
                 <Icon name={tab.icon} size={20} />
                 {tab.label}
@@ -240,12 +239,11 @@ export default function DashboardContent() {
                         <div className="flex-1">
                           <div className="flex items-center gap-4 mb-2">
                             <span className="font-semibold text-gray-900">{order.order_number}</span>
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                              order.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                              order.status === 'shipped' ? 'bg-blue-100 text-blue-700' :
-                              order.status === 'processing'? 'bg-yellow-100 text-yellow-700' : 
-                              order.status === 'cancelled'? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
-                            }`}>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${order.status === 'delivered' ? 'bg-green-100 text-green-700' :
+                                order.status === 'shipped' ? 'bg-blue-100 text-blue-700' :
+                                  order.status === 'processing' ? 'bg-yellow-100 text-yellow-700' :
+                                    order.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
+                              }`}>
                               {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                             </span>
                             <span className="text-xs text-gray-500">
@@ -311,6 +309,7 @@ export default function DashboardContent() {
                     value={userProfile?.phone || ''}
                     placeholder="Add phone number"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                    readOnly
                   />
                 </div>
               </div>

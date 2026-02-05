@@ -6,6 +6,7 @@ import AppImage from '@/components/ui/AppImage';
 import Icon from '@/components/ui/AppIcon';
 import { Filters } from './ProductListingContent';
 import { productService } from '@/lib/supabase/services/products';
+import { wishlistUtils } from '@/lib/wishlist';
 import type { Product } from '@/lib/supabase/types';
 
 interface ProductGridProps {
@@ -18,6 +19,7 @@ export default function ProductGrid({ filters }: ProductGridProps) {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [wishlistItems, setWishlistItems] = useState<string[]>([]);
   const productsPerPage = 12;
 
   useEffect(() => {
@@ -37,13 +39,35 @@ export default function ProductGrid({ filters }: ProductGridProps) {
     fetchProducts();
   }, []);
 
+  // Load wishlist items
+  useEffect(() => {
+    const loadWishlist = () => {
+      const wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
+      setWishlistItems(wishlist.map((item: any) => item.id));
+    };
+    
+    loadWishlist();
+    
+    const handleWishlistUpdate = () => {
+      loadWishlist();
+    };
+    
+    // Listen for both custom event and storage changes
+    window.addEventListener('wishlistUpdated', handleWishlistUpdate);
+    window.addEventListener('storage', handleWishlistUpdate);
+    
+    return () => {
+      window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
+      window.removeEventListener('storage', handleWishlistUpdate);
+    };
+  }, []);
+
   // Filter products based on selected filters
   const filteredProducts = allProducts.filter((product) => {
     // Category filter
     if (filters.categories.length > 0) {
       const categoryMatch = filters.categories.some(cat => {
-        // Match against category name from database
-        return product.category_id; // You may need to join with categories table
+        return product.category_id;
       });
       if (!categoryMatch) return false;
     }
@@ -207,12 +231,12 @@ export default function ProductGrid({ filters }: ProductGridProps) {
                     {/* Stock Status */}
                     <div
                       className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-semibold ${
-                        product.stock_status === 'in-stock' ?'bg-green-500 text-white'
-                          : product.stock_status === 'low-stock' ?'bg-yellow-500 text-white' :'bg-red-500 text-white'
+                        product.stock_status === 'in-stock' ? 'bg-green-500 text-white'
+                          : product.stock_status === 'low-stock' ? 'bg-yellow-500 text-white' : 'bg-red-500 text-white'
                       }`}
                     >
-                      {product.stock_status === 'in-stock' ?'In Stock'
-                        : product.stock_status === 'low-stock' ?'Low Stock' :'Out of Stock'}
+                      {product.stock_status === 'in-stock' ? 'In Stock'
+                        : product.stock_status === 'low-stock' ? 'Low Stock' : 'Out of Stock'}
                     </div>
 
                     {/* Quick Actions */}
@@ -220,11 +244,20 @@ export default function ProductGrid({ filters }: ProductGridProps) {
                       <button
                         onClick={(e) => {
                           e.preventDefault();
-                          // Add to wishlist logic
+                          e.stopPropagation();
+                          wishlistUtils.toggleWishlist(product);
                         }}
-                        className="bg-white p-2 rounded-full shadow-lg hover:bg-primary hover:text-white transition-colors"
+                        className={`p-2 rounded-full shadow-lg transition-colors ${
+                          wishlistItems.includes(product.id)
+                            ? 'bg-red-500 text-white'
+                            : 'bg-white hover:bg-primary hover:text-white'
+                        }`}
                       >
-                        <Icon name="HeartIcon" size={18} />
+                        <Icon 
+                          name="HeartIcon" 
+                          size={18} 
+                          className={wishlistItems.includes(product.id) ? 'fill-current' : ''}
+                        />
                       </button>
                     </div>
                   </div>
@@ -320,7 +353,7 @@ export default function ProductGrid({ filters }: ProductGridProps) {
                   onClick={() => handlePageChange(page)}
                   className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
                     currentPage === page
-                      ? 'bg-primary text-white' :'border border-gray-300 hover:bg-gray-50 text-gray-700'
+                      ? 'bg-primary text-white' : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
                   }`}
                 >
                   {page}

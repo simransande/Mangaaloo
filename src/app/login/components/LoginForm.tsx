@@ -24,6 +24,21 @@ export default function LoginForm() {
     funnelTracking.loginStart();
   }, []);
 
+  // Redirect if already logged in
+  useEffect(() => {
+    const checkUser = async () => {
+      const user = await authService.getCurrentUser();
+      if (user) {
+        if (redirect) {
+          router.push(redirect);
+        } else {
+          router.push('/user-dashboard');
+        }
+      }
+    };
+    checkUser();
+  }, [router, redirect]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -31,12 +46,12 @@ export default function LoginForm() {
 
     try {
       const { user } = await authService.signIn(formData.email, formData.password);
-      
+
       // Track successful login
       if (user) {
         funnelTracking.loginComplete(user.id);
       }
-      
+
       // Redirect to intended page or homepage
       if (redirect) {
         router.push(redirect);
