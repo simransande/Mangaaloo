@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Icon from '@/components/ui/AppIcon';
+import { useToast } from '@/lib/contexts/ToastContext';
 
 import { authService } from '@/lib/supabase/services/auth';
 import { returnService } from '@/lib/supabase/services/returns';
@@ -11,6 +12,7 @@ import type { Return } from '@/lib/supabase/types';
 
 export default function AdminReturnsContent() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [returns, setReturns] = useState<Return[]>([]);
@@ -31,7 +33,7 @@ export default function AdminReturnsContent() {
     const checkAdminAndFetchData = async () => {
       try {
         setLoading(true);
-        
+
         // Get current user with proper error handling
         let user = null;
         try {
@@ -56,7 +58,7 @@ export default function AdminReturnsContent() {
           router.push('/admin/login');
           return;
         }
-        
+
         if (!isAdmin) {
           router.push('/admin/login');
           return;
@@ -136,7 +138,7 @@ export default function AdminReturnsContent() {
       setStats(returnStats);
     } catch (err: any) {
       console.error('Error updating return status:', err);
-      alert(`Failed to update return status: ${err.message}`);
+      showToast(`Failed to update return status: ${err.message}`, 'error');
     } finally {
       setUpdatingReturnId(null);
     }
@@ -156,10 +158,10 @@ export default function AdminReturnsContent() {
       const returnStats = await returnService.getStats();
       setStats(returnStats);
 
-      alert('Refund processed successfully!');
+      showToast('Refund processed successfully!', 'success');
     } catch (err: any) {
       console.error('Error processing refund:', err);
-      alert(`Failed to process refund: ${err.message}`);
+      showToast(`Failed to process refund: ${err.message}`, 'error');
     } finally {
       setUpdatingReturnId(null);
     }
@@ -437,8 +439,8 @@ export default function AdminReturnsContent() {
                           {(returnItem.status === 'refunded' ||
                             returnItem.status === 'rejected' ||
                             returnItem.status === 'cancelled') && (
-                            <span className="text-sm text-gray-500">No actions</span>
-                          )}
+                              <span className="text-sm text-gray-500">No actions</span>
+                            )}
                         </div>
                       </td>
                     </tr>

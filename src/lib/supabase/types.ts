@@ -91,20 +91,22 @@ export interface Discount {
 export interface Order {
   id: string;
   order_number: string;
-  user_id?: string;
+  user_id?: string | null;
+  customer_id?: string | null;
   customer_name: string;
   customer_email: string;
-  customer_phone?: string;
+  customer_phone?: string | null;
   shipping_address: string;
-  billing_address?: string;
+  billing_address?: string | null;
   total_amount: number;
   discount_amount: number;
   final_amount: number;
-  discount_code?: string;
+  discount_code?: string | null;
   payment_method: PaymentMethod;
   shipping_cost: number;
   status: OrderStatus;
   items_count: number;
+  notes?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -112,14 +114,14 @@ export interface Order {
 export interface OrderItem {
   id: string;
   order_id: string;
-  product_id?: string;
+  product_id?: string | null;
   product_name: string;
   product_image: string;
   price: number;
-  discounted_price?: number;
+  discounted_price?: number | null;
   quantity: number;
-  color?: string;
-  size?: string;
+  color?: string | null;
+  size?: string | null;
   subtotal: number;
   created_at: string;
 }

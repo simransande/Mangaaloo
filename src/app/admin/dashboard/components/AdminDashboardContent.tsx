@@ -10,9 +10,11 @@ import { orderService } from '@/lib/supabase/services/orders';
 import { productService } from '@/lib/supabase/services/products';
 import { reviewService } from '@/lib/supabase/services/reviews';
 import { adminService } from '@/lib/supabase/services/admin';
+import { customerService, type Customer } from '@/lib/supabase/services/customers';
 import { supabaseClient } from '@/lib/supabase/client';
-import type { Order, Product, Customer } from '@/lib/supabase/types';
+import type { Order, Product } from '@/lib/supabase/types';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useToast } from '@/lib/contexts/ToastContext';
 
 interface AnalyticsData {
   dailyStats: Array<{ date: string; orders: number; revenue: number; cancelled: number }>;
@@ -24,6 +26,7 @@ interface AnalyticsData {
 
 export default function AdminDashboardContent() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [userEmail, setUserEmail] = useState('');
   const [activeSection, setActiveSection] = useState('overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -57,7 +60,7 @@ export default function AdminDashboardContent() {
     const checkAdminAndFetchData = async () => {
       try {
         setLoading(true);
-        
+
         // Get current user with proper error handling
         let user = null;
         try {
@@ -67,7 +70,7 @@ export default function AdminDashboardContent() {
           router.push('/admin/login');
           return;
         }
-        
+
         if (!user) {
           router.push('/admin/login');
           return;
@@ -82,7 +85,7 @@ export default function AdminDashboardContent() {
           router.push('/admin/login');
           return;
         }
-        
+
         if (!isAdmin) {
           router.push('/admin/login');
           return;
@@ -200,7 +203,7 @@ export default function AdminDashboardContent() {
       await orderService.updateStatus(orderId, newStatus);
     } catch (err: any) {
       console.error('Error updating order status:', err);
-      alert(`Failed to update order status: ${err.message}`);
+      showToast(`Failed to update order status: ${err.message}`, 'error');
     } finally {
       setUpdatingOrderId(null);
     }
@@ -222,10 +225,10 @@ export default function AdminDashboardContent() {
       const pendingCount = await reviewService.getPendingCount();
       setPendingReviewsCount(pendingCount);
 
-      alert(`Review ${status} successfully!`);
+      showToast(`Review ${status} successfully!`, 'success');
     } catch (err: any) {
       console.error('Error moderating review:', err);
-      alert(`Failed to moderate review: ${err.message}`);
+      showToast(`Failed to moderate review: ${err.message}`, 'error');
     } finally {
       setModeratingReviewId(null);
     }
@@ -238,10 +241,10 @@ export default function AdminDashboardContent() {
       setProductToDelete(productId);
       await productService.delete(productId);
       setProducts(products.filter(p => p.id !== productId));
-      alert('Product deleted successfully!');
+      showToast('Product deleted successfully!', 'success');
     } catch (err: any) {
       console.error('Error deleting product:', err);
-      alert(`Failed to delete product: ${err.message}`);
+      showToast(`Failed to delete product: ${err.message}`, 'error');
     } finally {
       setProductToDelete(null);
     }
@@ -271,20 +274,20 @@ export default function AdminDashboardContent() {
 
     try {
       if (productToEdit) {
-        const updated = await productService.update(productToEdit.id, productData);
+        const updated = await productService.update(productToEdit.id, productData as any);
         setProducts(products.map(p => p.id === updated.id ? updated : p));
-        alert('Product updated successfully!');
+        showToast('Product updated successfully!', 'success');
       } else {
         const created = await productService.create(productData as any);
         setProducts([created, ...products]);
-        alert('Product created successfully!');
+        showToast('Product created successfully!', 'success');
       }
       setShowProductForm(false);
       setProductToEdit(null);
       setImagePreview('');
     } catch (err: any) {
       console.error('Error saving product:', err);
-      alert(`Failed to save product: ${err.message}`);
+      showToast(`Failed to save product: ${err.message}`, 'error');
     }
   };
 
@@ -294,19 +297,19 @@ export default function AdminDashboardContent() {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      showToast('Please select an image file', 'warning');
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image size should be less than 5MB');
+      showToast('Image size should be less than 5MB', 'warning');
       return;
     }
 
     try {
       setUploadingImage(true);
-      
+
       // Create unique filename
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
@@ -334,10 +337,10 @@ export default function AdminDashboardContent() {
       }
 
       setImagePreview(publicUrl);
-      alert('Image uploaded successfully!');
+      showToast('Image uploaded successfully!', 'success');
     } catch (err: any) {
       console.error('Error uploading image:', err);
-      alert(`Failed to upload image: ${err.message}`);
+      showToast(`Failed to upload image: ${err.message}`, 'error');
     } finally {
       setUploadingImage(false);
     }
@@ -374,9 +377,22 @@ export default function AdminDashboardContent() {
 
   const CHART_COLORS = ['#4A9B8E', '#004E89', '#B8D4E3', '#10B981', '#8B5CF6'];
 
-  const filteredOrders = orderStatusFilter === 'all' 
-    ? allOrders 
+  const filteredOrders = orderStatusFilter === 'all'
+    ? allOrders
     : allOrders.filter(order => order.status === orderStatusFilter);
+
+  const handleSearchCustomers = () => {
+    // This can be used for manual search if needed
+  };
+
+  const filteredCustomers = customers.filter(customer => {
+    const query = (customerSearchQuery || '').toLowerCase();
+    return (
+      (customer.full_name || '').toLowerCase().includes(query) ||
+      (customer.email || '').toLowerCase().includes(query) ||
+      (customer.phone || '').toLowerCase().includes(query)
+    );
+  });
 
   if (loading) {
     return (
@@ -390,8 +406,8 @@ export default function AdminDashboardContent() {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
         <p className="text-red-600 mb-4">{error}</p>
-        <button 
-          onClick={() => window.location.reload()} 
+        <button
+          onClick={() => window.location.reload()}
           className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
         >
           Retry
@@ -403,9 +419,8 @@ export default function AdminDashboardContent() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <aside className={`bg-white shadow-lg transition-all duration-300 ${
-        isSidebarOpen ? 'w-64' : 'w-20'
-      } flex flex-col`}>
+      <aside className={`bg-white shadow-lg transition-all duration-300 ${isSidebarOpen ? 'w-64' : 'w-20'
+        } flex flex-col`}>
         {/* Logo */}
         <div className="p-6 border-b border-gray-200">
           <Link href="/homepage" className="flex items-center gap-3">
@@ -436,10 +451,9 @@ export default function AdminDashboardContent() {
               <button
                 key={item.id}
                 onClick={() => setActiveSection(item.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors relative ${
-                  activeSection === item.id
-                    ? 'bg-primary text-white' :'text-gray-700 hover:bg-gray-100'
-                }`}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors relative ${activeSection === item.id
+                  ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'
+                  }`}
                 title={!isSidebarOpen ? item.label : ''}
               >
                 <Icon name={item.icon as any} size={20} />
@@ -496,16 +510,14 @@ export default function AdminDashboardContent() {
                 {statsDisplay.map((stat, index) => (
                   <div key={index} className="bg-white rounded-xl shadow-md p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <div className={`p-3 rounded-lg ${
-                        stat.color === 'green' ? 'bg-green-100' :
+                      <div className={`p-3 rounded-lg ${stat.color === 'green' ? 'bg-green-100' :
                         stat.color === 'blue' ? 'bg-blue-100' :
-                        stat.color === 'purple'? 'bg-purple-100' : 'bg-orange-100'
-                      }`}>
-                        <Icon name={stat.icon as any} size={24} className={`${
-                          stat.color === 'green' ? 'text-green-600' :
+                          stat.color === 'purple' ? 'bg-purple-100' : 'bg-orange-100'
+                        }`}>
+                        <Icon name={stat.icon as any} size={24} className={`${stat.color === 'green' ? 'text-green-600' :
                           stat.color === 'blue' ? 'text-blue-600' :
-                          stat.color === 'purple'? 'text-purple-600' : 'text-orange-600'
-                        }`} />
+                            stat.color === 'purple' ? 'text-purple-600' : 'text-orange-600'
+                          }`} />
                       </div>
                     </div>
                     <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
@@ -614,12 +626,11 @@ export default function AdminDashboardContent() {
                           <td className="py-3 px-4 text-sm text-gray-700">{order.customer_name}</td>
                           <td className="py-3 px-4 text-sm font-semibold text-gray-900">₹{order.final_amount}</td>
                           <td className="py-3 px-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                              order.status === 'delivered' ? 'bg-green-100 text-green-700' :
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${order.status === 'delivered' ? 'bg-green-100 text-green-700' :
                               order.status === 'shipped' ? 'bg-blue-100 text-blue-700' :
-                              order.status === 'processing'? 'bg-yellow-100 text-yellow-700' : 
-                              order.status === 'cancelled'? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
-                            }`}>
+                                order.status === 'processing' ? 'bg-yellow-100 text-yellow-700' :
+                                  order.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
+                              }`}>
                               {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                             </span>
                           </td>
@@ -746,11 +757,11 @@ export default function AdminDashboardContent() {
                           />
                         </div>
                       </div>
-                      
+
                       {/* Image Upload Section */}
                       <div className="space-y-3">
                         <label className="block text-sm font-semibold text-gray-700">Product Image *</label>
-                        
+
                         {/* File Upload */}
                         <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
                           <input
@@ -906,10 +917,9 @@ export default function AdminDashboardContent() {
                           {product.badge}
                         </span>
                       )}
-                      <span className={`absolute top-3 right-3 px-3 py-1 text-xs font-bold rounded-full ${
-                        product.stock_status === 'in-stock' ? 'bg-green-100 text-green-700' :
-                        product.stock_status === 'low-stock'? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
-                      }`}>
+                      <span className={`absolute top-3 right-3 px-3 py-1 text-xs font-bold rounded-full ${product.stock_status === 'in-stock' ? 'bg-green-100 text-green-700' :
+                        product.stock_status === 'low-stock' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
+                        }`}>
                         {product.stock_status}
                       </span>
                     </div>
@@ -1004,12 +1014,11 @@ export default function AdminDashboardContent() {
                           </span>
                         </td>
                         <td className="py-3 px-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            order.status === 'delivered' ? 'bg-green-100 text-green-700' :
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${order.status === 'delivered' ? 'bg-green-100 text-green-700' :
                             order.status === 'shipped' ? 'bg-blue-100 text-blue-700' :
-                            order.status === 'processing'? 'bg-yellow-100 text-yellow-700' : 
-                            order.status === 'cancelled'? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
-                          }`}>
+                              order.status === 'processing' ? 'bg-yellow-100 text-yellow-700' :
+                                order.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
+                            }`}>
                             {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                           </span>
                         </td>
@@ -1050,17 +1059,15 @@ export default function AdminDashboardContent() {
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setAnalyticsTimeRange('daily')}
-                    className={`px-4 py-2 rounded-lg font-semibold ${
-                      analyticsTimeRange === 'daily' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700'
-                    }`}
+                    className={`px-4 py-2 rounded-lg font-semibold ${analyticsTimeRange === 'daily' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700'
+                      }`}
                   >
                     Daily
                   </button>
                   <button
                     onClick={() => setAnalyticsTimeRange('monthly')}
-                    className={`px-4 py-2 rounded-lg font-semibold ${
-                      analyticsTimeRange === 'monthly' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700'
-                    }`}
+                    className={`px-4 py-2 rounded-lg font-semibold ${analyticsTimeRange === 'monthly' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700'
+                      }`}
                   >
                     Monthly
                   </button>
@@ -1182,7 +1189,7 @@ export default function AdminDashboardContent() {
                 </div>
                 <div className="mt-4 p-4 bg-white rounded-lg">
                   <p className="text-sm text-gray-700">
-                    <strong>Note:</strong> Google Analytics 4 is integrated and tracking all user interactions. 
+                    <strong>Note:</strong> Google Analytics 4 is integrated and tracking all user interactions.
                     Visit your <a href="https://analytics.google.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Analytics Dashboard</a> to view detailed reports, user behavior, conversion rates, and real-time data.
                   </p>
                 </div>
@@ -1204,7 +1211,7 @@ export default function AdminDashboardContent() {
                   </span>
                 </div>
               </div>
-              
+
               {reviews.length === 0 ? (
                 <div className="text-center py-12">
                   <Icon name="ChatBubbleLeftRightIcon" size={48} className="text-gray-400 mx-auto mb-4" />
@@ -1245,20 +1252,19 @@ export default function AdminDashboardContent() {
                           <p className="text-gray-700 mt-3">{review.content}</p>
                         </div>
                         <div className="ml-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            review.status === 'approved' ? 'bg-green-100 text-green-700' :
-                            review.status === 'rejected'? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
-                          }`}>
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${review.status === 'approved' ? 'bg-green-100 text-green-700' :
+                            review.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+                            }`}>
                             {review.status.charAt(0).toUpperCase() + review.status.slice(1)}
                           </span>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                         <span className="text-sm text-gray-500">
                           {new Date(review.created_at).toLocaleString()}
                         </span>
-                        
+
                         {review.status === 'pending' && (
                           <div className="flex space-x-2">
                             <button
@@ -1366,9 +1372,9 @@ export default function AdminDashboardContent() {
                     <div>
                       <p className="text-sm text-gray-600 mb-1">Avg Order Value</p>
                       <p className="text-2xl font-bold text-gray-900">
-                        ₹{customers.length > 0 
-                          ? (customers.reduce((sum, c) => sum + Number(c.total_spent), 0) / 
-                             customers.reduce((sum, c) => sum + c.total_orders, 0) || 1).toFixed(2)
+                        ₹{customers.length > 0
+                          ? (customers.reduce((sum, c) => sum + Number(c.total_spent), 0) /
+                            customers.reduce((sum, c) => sum + c.total_orders, 0) || 1).toFixed(2)
                           : '0.00'
                         }
                       </p>

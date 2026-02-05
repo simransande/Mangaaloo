@@ -8,6 +8,7 @@ import { productService } from '@/lib/supabase/services/products';
 import { cartService } from '@/lib/supabase/services/cart';
 import { authService } from '@/lib/supabase/services/auth';
 import type { Product } from '@/lib/supabase/types';
+import { useToast } from '@/lib/contexts/ToastContext';
 
 interface ProductInfoProps {
   productId?: string;
@@ -15,6 +16,7 @@ interface ProductInfoProps {
 
 export default function ProductInfo({ productId }: ProductInfoProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedColor, setSelectedColor] = useState<string>('');
@@ -56,13 +58,13 @@ export default function ProductInfo({ productId }: ProductInfoProps) {
 
     // Validate selections
     if (product.sizes && product.sizes.length > 0 && !selectedSize) {
-      alert('Please select a size');
+      showToast('Please select a size', 'warning');
       return;
     }
 
     try {
       setAddingToCart(true);
-      
+
       // Check if user is logged in
       let user = null;
       try {
@@ -84,11 +86,11 @@ export default function ProductInfo({ productId }: ProductInfoProps) {
         // Add to local storage cart
         const localCart = localStorage.getItem('cart');
         const cartItems = localCart ? JSON.parse(localCart) : [];
-        
+
         const existingItemIndex = cartItems.findIndex(
-          (item: any) => 
-            item.id === product.id && 
-            item.color === selectedColor && 
+          (item: any) =>
+            item.id === product.id &&
+            item.color === selectedColor &&
             item.size === selectedSize
         );
 
@@ -124,10 +126,10 @@ export default function ProductInfo({ productId }: ProductInfoProps) {
         category: product.category_id || 'Uncategorized',
       });
 
-      alert(`Added ${quantity} item(s) to cart!`);
+      showToast(`Added ${quantity} item(s) to cart!`, 'success');
     } catch (err: any) {
       console.error('Error adding to cart:', err);
-      alert(`Failed to add to cart: ${err.message}`);
+      showToast(`Failed to add to cart: ${err.message}`, 'error');
     } finally {
       setAddingToCart(false);
     }
@@ -138,7 +140,7 @@ export default function ProductInfo({ productId }: ProductInfoProps) {
 
     // Validate selections
     if (product.sizes && product.sizes.length > 0 && !selectedSize) {
-      alert('Please select a size');
+      showToast('Please select a size', 'warning');
       return;
     }
 
@@ -152,7 +154,7 @@ export default function ProductInfo({ productId }: ProductInfoProps) {
         router.push('/login?redirect=/checkout');
         return;
       }
-      
+
       // User is logged in, add to cart and go to checkout
       await handleAddToCart();
       router.push('/checkout');
@@ -223,17 +225,15 @@ export default function ProductInfo({ productId }: ProductInfoProps) {
 
       {/* Stock Status */}
       <div className="flex items-center space-x-2">
-        <div className={`w-2 h-2 rounded-full animate-pulse ${
-          product.stock_status === 'in-stock' ? 'bg-success' :
+        <div className={`w-2 h-2 rounded-full animate-pulse ${product.stock_status === 'in-stock' ? 'bg-success' :
           product.stock_status === 'low-stock' ? 'bg-yellow-500' : 'bg-red-500'
-        }`}></div>
-        <span className={`text-sm font-semibold ${
-          product.stock_status === 'in-stock' ? 'text-success' :
+          }`}></div>
+        <span className={`text-sm font-semibold ${product.stock_status === 'in-stock' ? 'text-success' :
           product.stock_status === 'low-stock' ? 'text-yellow-600' : 'text-red-600'
-        }`}>
+          }`}>
           {product.stock_status === 'in-stock' ? 'In Stock - Ships in 24 hours' :
-           product.stock_status === 'low-stock' ? `Low Stock - Only ${product.stock_quantity} left` :
-           'Out of Stock'}
+            product.stock_status === 'low-stock' ? `Low Stock - Only ${product.stock_quantity} left` :
+              'Out of Stock'}
         </span>
       </div>
 
@@ -253,10 +253,9 @@ export default function ProductInfo({ productId }: ProductInfoProps) {
               <button
                 key={`color_${index}`}
                 onClick={() => setSelectedColor(color)}
-                className={`px-4 py-2 border-2 rounded-lg transition-all hover:scale-105 ${
-                  selectedColor === color
-                    ? 'border-primary bg-primary/10 scale-105' :'border-border hover:border-primary'
-                }`}
+                className={`px-4 py-2 border-2 rounded-lg transition-all hover:scale-105 ${selectedColor === color
+                  ? 'border-primary bg-primary/10 scale-105' : 'border-border hover:border-primary'
+                  }`}
               >
                 <span className="font-medium">{color}</span>
               </button>
@@ -276,11 +275,10 @@ export default function ProductInfo({ productId }: ProductInfoProps) {
               <button
                 key={`size_${index}`}
                 onClick={() => setSelectedSize(size)}
-                className={`px-4 py-3 border rounded-lg text-sm font-semibold transition-all ${
-                  selectedSize === size
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'border-border hover:border-primary'
-                }`}
+                className={`px-4 py-3 border rounded-lg text-sm font-semibold transition-all ${selectedSize === size
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'border-border hover:border-primary'
+                  }`}
               >
                 {size}
               </button>
@@ -344,11 +342,10 @@ export default function ProductInfo({ productId }: ProductInfoProps) {
           </button>
           <button
             onClick={() => setIsWishlisted(!isWishlisted)}
-            className={`px-4 py-3 border-2 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 ${
-              isWishlisted
-                ? 'border-error bg-error text-error-foreground'
-                : 'border-border hover:border-error'
-            }`}
+            className={`px-4 py-3 border-2 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 ${isWishlisted
+              ? 'border-error bg-error text-error-foreground'
+              : 'border-border hover:border-error'
+              }`}
           >
             <Icon
               name="HeartIcon"

@@ -6,6 +6,7 @@ import Icon from '@/components/ui/AppIcon';
 import { CartItem } from './CartContent';
 import { cartService } from '@/lib/supabase/services/cart';
 import { authService } from '@/lib/supabase/services/auth';
+import { useToast } from '@/lib/contexts/ToastContext';
 
 interface CartItemsProps {
   items: CartItem[];
@@ -13,6 +14,7 @@ interface CartItemsProps {
 }
 
 export default function CartItems({ items, onUpdateCart }: CartItemsProps) {
+  const { showToast } = useToast();
   const updateQuantity = async (cartItemId: string, productId: string, newQuantity: number, color: string, size: string) => {
     // Ensure quantity is valid
     if (newQuantity < 1) {
@@ -55,12 +57,12 @@ export default function CartItems({ items, onUpdateCart }: CartItemsProps) {
             : item
         )
       );
-      
+
       // Dispatch cart update event
       window.dispatchEvent(new Event('cartUpdated'));
     } catch (err: any) {
       console.error('Error updating quantity:', err);
-      alert(`Failed to update quantity: ${err.message}`);
+      showToast(`Failed to update quantity: ${err.message}`, 'error');
     }
   };
 
@@ -93,12 +95,12 @@ export default function CartItems({ items, onUpdateCart }: CartItemsProps) {
 
       // Update UI
       onUpdateCart((prevItems) => prevItems.filter((item) => item.id !== cartItemId));
-      
+
       // Dispatch cart update event
       window.dispatchEvent(new Event('cartUpdated'));
     } catch (err: any) {
       console.error('Error removing item:', err);
-      alert(`Failed to remove item: ${err.message}`);
+      showToast(`Failed to remove item: ${err.message}`, 'error');
     }
   };
 
@@ -109,7 +111,7 @@ export default function CartItems({ items, onUpdateCart }: CartItemsProps) {
       item.id === id ? { ...item, quantity: newQuantity } : item
     );
     onUpdateCart(updatedItems);
-    
+
     // Dispatch cart update event
     window.dispatchEvent(new Event('cartUpdated'));
   };
@@ -117,7 +119,7 @@ export default function CartItems({ items, onUpdateCart }: CartItemsProps) {
   const handleRemove = (id: string) => {
     const updatedItems = items.filter((item) => item.id !== id);
     onUpdateCart(updatedItems);
-    
+
     // Dispatch cart update event
     window.dispatchEvent(new Event('cartUpdated'));
   };

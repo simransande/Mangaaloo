@@ -5,6 +5,7 @@ import Link from 'next/link';
 import AppImage from '@/components/ui/AppImage';
 import Icon from '@/components/ui/AppIcon';
 import { productService } from '@/lib/supabase/services/products';
+import { wishlistUtils } from '@/lib/wishlist';
 import type { Product } from '@/lib/supabase/types';
 
 export default function FeaturedProducts() {
@@ -12,6 +13,7 @@ export default function FeaturedProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [wishlistItems, setWishlistItems] = useState<string[]>([]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -35,8 +37,9 @@ export default function FeaturedProducts() {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const data = await productService.getAll();
-        setProducts(data.slice(0, 12)); // Get first 12 products
+        // Use getTrending with a limit to optimize load time
+        const data = await productService.getTrending(8);
+        setProducts(data);
       } catch (err: any) {
         console.error('Error fetching products:', err);
         setError(err.message || 'Failed to load products');
@@ -46,6 +49,29 @@ export default function FeaturedProducts() {
     };
 
     fetchProducts();
+  }, []);
+
+  // Load wishlist items
+  useEffect(() => {
+    const loadWishlist = () => {
+      const wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
+      setWishlistItems(wishlist.map((item: any) => item.id));
+    };
+    
+    loadWishlist();
+    
+    const handleWishlistUpdate = () => {
+      loadWishlist();
+    };
+    
+    // Listen for both custom event and storage changes
+    window.addEventListener('wishlistUpdated', handleWishlistUpdate);
+    window.addEventListener('storage', handleWishlistUpdate);
+    
+    return () => {
+      window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
+      window.removeEventListener('storage', handleWishlistUpdate);
+    };
   }, []);
 
   return (
@@ -72,8 +98,8 @@ export default function FeaturedProducts() {
         {error && (
           <div className="text-center py-10">
             <p className="text-red-600 mb-4">{error}</p>
-            <button 
-              onClick={() => window.location.reload()} 
+            <button
+              onClick={() => window.location.reload()}
               className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
             >
               Retry
@@ -87,11 +113,10 @@ export default function FeaturedProducts() {
             {products.map((product, index) => (
               <div
                 key={product.id}
-                className={`group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 ${
-                  isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-                }`}
+                className={`group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+                  }`}
                 style={{
-                  transitionDelay: `${index * 100}ms`,
+                  transitionDelay: `${index * 50}ms`,
                 }}
               >
                 {/* Product Image */}
@@ -101,7 +126,7 @@ export default function FeaturedProducts() {
                     alt={product.image_alt}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   />
-                  
+
                   {/* Badge */}
                   {product.badge && (
                     <div className="absolute top-4 left-4 bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-1 rounded-full text-sm font-semibold shadow-lg">
@@ -110,9 +135,24 @@ export default function FeaturedProducts() {
                   )}
 
                   {/* Quick Actions */}
-                  <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <button className="bg-white p-2 rounded-full shadow-lg hover:bg-primary hover:text-white transition-colors">
-                      <Icon name="HeartIcon" size={20} />
+                  <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        wishlistUtils.toggleWishlist(product);
+                      }}
+                      className={`p-2 rounded-full shadow-lg transition-colors !cursor-pointer ${
+                        wishlistItems.includes(product.id)
+                          ? 'bg-red-500 text-white'
+                          : 'bg-white hover:bg-primary hover:text-white'
+                      }`}
+                    >
+                      <Icon 
+                        name="HeartIcon" 
+                        size={20} 
+                        className={wishlistItems.includes(product.id) ? 'fill-current' : ''}
+                      />
                     </button>
                     <button className="bg-white p-2 rounded-full shadow-lg hover:bg-primary hover:text-white transition-colors">
                       <Icon name="EyeIcon" size={20} />

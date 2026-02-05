@@ -20,6 +20,7 @@ export default function RegisterForm() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   // Track registration form view
@@ -30,6 +31,7 @@ export default function RegisterForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
 
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
@@ -45,25 +47,32 @@ export default function RegisterForm() {
 
     try {
       const { user, session } = await authService.signUp(formData.email, formData.password, formData.name);
-      
+
       // Wait for session to be established
       if (!session) {
-        setError('Please check your email to verify your account before logging in.');
+        setSuccess('Verification email sent! Please check your email to verify your account, then you can log in.');
         setLoading(false);
+        // Clear form
+        setFormData({
+          name: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+        });
         return;
       }
 
       // Track successful registration
       if (user) {
         funnelTracking.registrationComplete(user.id);
-        
+
         // Wait for auth state to propagate
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
         // Create customer record with retry logic
         let customerCreated = false;
         let retries = 3;
-        
+
         while (!customerCreated && retries > 0) {
           try {
             await customerService.upsert({
@@ -81,12 +90,12 @@ export default function RegisterForm() {
             }
           }
         }
-        
+
         if (!customerCreated) {
           console.warn('Customer record creation failed after retries');
         }
       }
-      
+
       // Redirect to intended page or user dashboard
       if (redirect) {
         router.push(redirect);
@@ -95,7 +104,7 @@ export default function RegisterForm() {
       }
     } catch (err: any) {
       console.error('Registration error:', err);
-      
+
       // Handle specific Supabase rate limit error
       if (err.message && err.message.includes('email rate limit exceeded')) {
         setError('Too many registration attempts. Please wait a few minutes before trying again.');
@@ -121,6 +130,19 @@ export default function RegisterForm() {
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
             <Icon name="ExclamationCircleIcon" size={20} />
             <span>{error}</span>
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-700">
+            <Icon name="CheckCircleIcon" size={20} />
+            <div className="flex-1">
+              <p className="font-semibold mb-1">Success!</p>
+              <p>{success}</p>
+              <Link href="/login" className="inline-block mt-2 font-bold underline hover:no-underline">
+                Go to Login
+              </Link>
+            </div>
           </div>
         )}
 

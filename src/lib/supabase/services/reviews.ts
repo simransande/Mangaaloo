@@ -82,7 +82,7 @@ export const reviewService = {
   },
 
   // Moderate a review (admin only)
-  async moderate(reviewId: string, status: 'approved\' | \'rejected', moderatorId: string, reason?: string) {
+  async moderate(reviewId: string, status: 'approved' | 'rejected', moderatorId: string, reason?: string) {
     // Get current review status
     const { data: currentReview, error: fetchError } = await supabaseClient
       .from('reviews')
