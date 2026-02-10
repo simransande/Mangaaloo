@@ -87,7 +87,7 @@ function OrderConfirmationInner() {
           {/* Order Details */}
           <div className="bg-white rounded-xl shadow-md p-6 mb-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Order Details</h2>
-            
+
             <div className="space-y-4">
               {/* Customer Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -135,7 +135,10 @@ function OrderConfirmationInner() {
             <h2 className="text-xl font-bold text-gray-900 mb-4">Order Items</h2>
             <div className="space-y-4">
               {orderItems.map((item) => (
-                <div key={item.id} className="flex gap-4 pb-4 border-b border-gray-200 last:border-0">
+                <div
+                  key={item.id}
+                  className="flex gap-4 pb-4 border-b border-gray-200 last:border-0"
+                >
                   <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                     <img
                       src={item.product_image}
@@ -186,7 +189,9 @@ function OrderConfirmationInner() {
               )}
               <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
                 <span className="text-lg font-bold text-gray-900">Total</span>
-                <span className="text-2xl font-bold text-primary">₹{order.final_amount.toFixed(2)}</span>
+                <span className="text-2xl font-bold text-primary">
+                  ₹{order.final_amount.toFixed(2)}
+                </span>
               </div>
             </div>
           </div>
@@ -194,7 +199,11 @@ function OrderConfirmationInner() {
           {/* COD Info */}
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
             <div className="flex items-start gap-3">
-              <Icon name="InformationCircleIcon" size={24} className="text-blue-600 flex-shrink-0" />
+              <Icon
+                name="InformationCircleIcon"
+                size={24}
+                className="text-blue-600 flex-shrink-0"
+              />
               <div>
                 <h3 className="font-bold text-blue-900 mb-2">Cash on Delivery Instructions</h3>
                 <ul className="text-sm text-blue-800 space-y-1">

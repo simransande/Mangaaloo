@@ -16,7 +16,7 @@ import { ecommerceTracking } from '@/lib/analytics';
 function ProductDetailInner() {
   const searchParams = useSearchParams();
   const productId = searchParams.get('id');
-  
+
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -29,13 +29,11 @@ function ProductDetailInner() {
     try {
       setLoading(true);
       const products = await productService.getAll();
-      
+
       if (products && products.length > 0) {
         // If productId is provided, find that specific product
-        const selectedProduct = productId 
-          ? products.find(p => p.id === productId) 
-          : products[0];
-        
+        const selectedProduct = productId ? products.find((p) => p.id === productId) : products[0];
+
         if (selectedProduct) {
           setProduct(selectedProduct);
           // Track product view
@@ -91,9 +89,7 @@ function ProductDetailInner() {
             Products
           </Link>
           <Icon name="ChevronRightIcon" size={16} />
-          <span className="text-foreground font-medium">
-            {product.name}
-          </span>
+          <span className="text-foreground font-medium">{product.name}</span>
         </div>
       </div>
 
@@ -113,11 +109,13 @@ function ProductDetailInner() {
 
 export default function ProductDetailContent() {
   return (
-    <Suspense fallback={
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex justify-center items-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      }
+    >
       <ProductDetailInner />
     </Suspense>
   );

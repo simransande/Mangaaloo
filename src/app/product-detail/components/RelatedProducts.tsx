@@ -23,9 +23,7 @@ export default function RelatedProducts({ currentProductId }: RelatedProductsPro
       setLoading(true);
       const allProducts = await productService.getAll();
       // Filter out current product and limit to 4
-      const related = allProducts
-        .filter(p => p.id !== currentProductId)
-        .slice(0, 4);
+      const related = allProducts.filter((p) => p.id !== currentProductId).slice(0, 4);
       setProducts(related);
     } catch (err) {
       console.error('Error fetching related products:', err);
@@ -97,7 +95,9 @@ export default function RelatedProducts({ currentProductId }: RelatedProductsPro
                   )}
                 </div>
                 {discountPercent > 0 && (
-                  <span className="text-xs text-green-600 font-semibold">{discountPercent}% OFF</span>
+                  <span className="text-xs text-green-600 font-semibold">
+                    {discountPercent}% OFF
+                  </span>
                 )}
               </div>
             </Link>

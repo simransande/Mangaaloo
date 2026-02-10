@@ -167,7 +167,75 @@ CREATE TABLE IF NOT EXISTS public.cart_items (
 );
 
 -- ============================================================================
--- STEP 3: INDEXES
+-- STEP 3: ADD MISSING COLUMNS (for existing tables)
+-- ============================================================================
+
+-- Add role column if it doesn't exist (for existing user_profiles table)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'user_profiles' 
+        AND column_name = 'role'
+    ) THEN
+        ALTER TABLE public.user_profiles 
+        ADD COLUMN role public.user_role DEFAULT 'customer'::public.user_role;
+        
+        RAISE NOTICE 'Added role column to user_profiles table';
+    END IF;
+END $$;
+
+-- Add stock_status column if it doesn't exist (for existing products table)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'products' 
+        AND column_name = 'stock_status'
+    ) THEN
+        ALTER TABLE public.products 
+        ADD COLUMN stock_status public.stock_status DEFAULT 'in-stock'::public.stock_status;
+        
+        RAISE NOTICE 'Added stock_status column to products table';
+    END IF;
+END $$;
+
+-- Add status column if it doesn't exist (for existing orders table)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'orders' 
+        AND column_name = 'status'
+    ) THEN
+        ALTER TABLE public.orders 
+        ADD COLUMN status public.order_status DEFAULT 'pending'::public.order_status;
+        
+        RAISE NOTICE 'Added status column to orders table';
+    END IF;
+END $$;
+
+-- Add discount_type column if it doesn't exist (for existing discounts table)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'discounts' 
+        AND column_name = 'discount_type'
+    ) THEN
+        ALTER TABLE public.discounts 
+        ADD COLUMN discount_type public.discount_type NOT NULL DEFAULT 'percentage'::public.discount_type;
+        
+        RAISE NOTICE 'Added discount_type column to discounts table';
+    END IF;
+END $$;
+
+-- ============================================================================
+-- STEP 4: INDEXES
 -- ============================================================================
 
 CREATE INDEX IF NOT EXISTS idx_user_profiles_email ON public.user_profiles(email);
@@ -200,7 +268,7 @@ CREATE INDEX IF NOT EXISTS idx_cart_items_user_id ON public.cart_items(user_id);
 CREATE INDEX IF NOT EXISTS idx_cart_items_product_id ON public.cart_items(product_id);
 
 -- ============================================================================
--- STEP 4: FUNCTIONS (BEFORE RLS POLICIES)
+-- STEP 5: FUNCTIONS (BEFORE RLS POLICIES)
 -- ============================================================================
 
 -- Function: Auto-create user profile when auth user is created
@@ -249,7 +317,7 @@ SELECT EXISTS (
 $$;
 
 -- ============================================================================
--- STEP 5: ENABLE RLS
+-- STEP 6: ENABLE RLS
 -- ============================================================================
 
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
@@ -264,7 +332,7 @@ ALTER TABLE public.inventory_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.cart_items ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
--- STEP 6: RLS POLICIES
+-- STEP 7: RLS POLICIES
 -- ============================================================================
 
 -- User Profiles Policies
@@ -422,7 +490,7 @@ USING (user_id = auth.uid())
 WITH CHECK (user_id = auth.uid());
 
 -- ============================================================================
--- STEP 7: TRIGGERS
+-- STEP 8: TRIGGERS
 -- ============================================================================
 
 -- Trigger: Auto-create user profile
@@ -470,7 +538,7 @@ CREATE TRIGGER update_cart_items_updated_at
     EXECUTE FUNCTION public.update_updated_at_column();
 
 -- ============================================================================
--- STEP 8: MOCK DATA
+-- STEP 9: MOCK DATA
 -- ============================================================================
 
 DO $$

@@ -27,11 +27,7 @@ export const designService = {
 
   // Create design (admin only)
   async create(design: Omit<Design, 'id' | 'created_at' | 'updated_at'>) {
-    const { data, error } = await supabaseClient
-      .from('designs')
-      .insert(design)
-      .select()
-      .single();
+    const { data, error } = await supabaseClient.from('designs').insert(design).select().single();
 
     if (error) throw error;
     return data as Design;
@@ -52,10 +48,7 @@ export const designService = {
 
   // Delete design (admin only)
   async delete(id: string) {
-    const { error } = await supabaseClient
-      .from('designs')
-      .delete()
-      .eq('id', id);
+    const { error } = await supabaseClient.from('designs').delete().eq('id', id);
 
     if (error) throw error;
   },

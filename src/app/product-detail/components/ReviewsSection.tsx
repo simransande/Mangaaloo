@@ -97,7 +97,10 @@ export default function ReviewsSection({ productId }: ReviewsSectionProps) {
       const newUserReview = await reviewService.getUserReview(productId, currentUser.id);
       setUserReview(newUserReview);
 
-      showToast('Review submitted successfully! It will be visible after admin approval.', 'success');
+      showToast(
+        'Review submitted successfully! It will be visible after admin approval.',
+        'success'
+      );
     } catch (err: any) {
       console.error('Error submitting review:', err);
       showToast(err.message || 'Failed to submit review', 'error');
@@ -106,7 +109,12 @@ export default function ReviewsSection({ productId }: ReviewsSectionProps) {
     }
   };
 
-  const renderStars = (count: number, size: number = 16, interactive: boolean = false, onRate?: (rating: number) => void) => {
+  const renderStars = (
+    count: number,
+    size: number = 16,
+    interactive: boolean = false,
+    onRate?: (rating: number) => void
+  ) => {
     return (
       <div className="flex items-center space-x-1">
         {[1, 2, 3, 4, 5].map((star) => (
@@ -242,8 +250,14 @@ export default function ReviewsSection({ productId }: ReviewsSectionProps) {
 
       {reviews.length === 0 && !loading && (
         <div className="text-center py-12">
-          <Icon name="ChatBubbleLeftRightIcon" size={48} className="text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">No reviews yet. Be the first to review this product!</p>
+          <Icon
+            name="ChatBubbleLeftRightIcon"
+            size={48}
+            className="text-muted-foreground mx-auto mb-4"
+          />
+          <p className="text-muted-foreground">
+            No reviews yet. Be the first to review this product!
+          </p>
         </div>
       )}
 
@@ -253,7 +267,9 @@ export default function ReviewsSection({ productId }: ReviewsSectionProps) {
             <div className="flex justify-between items-start mb-3">
               <div>
                 <div className="flex items-center space-x-2">
-                  <span className="font-semibold">{review.user_profiles?.full_name || 'Anonymous'}</span>
+                  <span className="font-semibold">
+                    {review.user_profiles?.full_name || 'Anonymous'}
+                  </span>
                   {review.is_verified_purchase && (
                     <span className="inline-flex items-center space-x-1 px-2 py-1 bg-success/10 text-success text-xs font-semibold rounded">
                       <Icon name="CheckBadgeIcon" size={14} />

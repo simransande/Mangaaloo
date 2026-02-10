@@ -12,9 +12,7 @@ export const metadata: Metadata = {
   title: 'Next.js with Tailwind CSS',
   description: 'A boilerplate project with Next.js and Tailwind CSS',
   icons: {
-    icon: [
-      { url: '/favicon.ico', type: 'image/x-icon' }
-    ],
+    icon: [{ url: '/favicon.ico', type: 'image/x-icon' }],
   },
 };
 
@@ -29,9 +27,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <GoogleAnalytics />
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );

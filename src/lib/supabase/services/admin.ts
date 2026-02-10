@@ -36,18 +36,21 @@ export const adminService = {
     if (error) throw error;
 
     // Group by day
-    const dailyStats = new Map<string, { date: string; orders: number; revenue: number; cancelled: number }>();
+    const dailyStats = new Map<
+      string,
+      { date: string; orders: number; revenue: number; cancelled: number }
+    >();
 
     data.forEach((order: any) => {
       const date = new Date(order.created_at).toISOString().split('T')[0];
       const existing = dailyStats.get(date) || { date, orders: 0, revenue: 0, cancelled: 0 };
-      
+
       existing.orders += 1;
       existing.revenue += order.final_amount;
       if (order.status === 'cancelled') {
         existing.cancelled += 1;
       }
-      
+
       dailyStats.set(date, existing);
     });
 
@@ -68,19 +71,27 @@ export const adminService = {
     if (error) throw error;
 
     // Group by month
-    const monthlyStats = new Map<string, { month: string; orders: number; revenue: number; cancelled: number }>();
+    const monthlyStats = new Map<
+      string,
+      { month: string; orders: number; revenue: number; cancelled: number }
+    >();
 
     data.forEach((order: any) => {
       const date = new Date(order.created_at);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const existing = monthlyStats.get(monthKey) || { month: monthKey, orders: 0, revenue: 0, cancelled: 0 };
-      
+      const existing = monthlyStats.get(monthKey) || {
+        month: monthKey,
+        orders: 0,
+        revenue: 0,
+        cancelled: 0,
+      };
+
       existing.orders += 1;
       existing.revenue += order.final_amount;
       if (order.status === 'cancelled') {
         existing.cancelled += 1;
       }
-      
+
       monthlyStats.set(monthKey, existing);
     });
 
@@ -89,9 +100,7 @@ export const adminService = {
 
   // Get order status breakdown
   async getOrderStatusBreakdown() {
-    const { data, error } = await supabaseClient
-      .from('orders')
-      .select('status');
+    const { data, error } = await supabaseClient.from('orders').select('status');
 
     if (error) throw error;
 
@@ -116,7 +125,10 @@ export const adminService = {
     if (error) throw error;
 
     // Aggregate by product
-    const productStats = new Map<string, { id: string; name: string; totalSold: number; revenue: number }>();
+    const productStats = new Map<
+      string,
+      { id: string; name: string; totalSold: number; revenue: number }
+    >();
 
     data.forEach((item: any) => {
       const existing = productStats.get(item.product_id) || {
@@ -125,10 +137,10 @@ export const adminService = {
         totalSold: 0,
         revenue: 0,
       };
-      
+
       existing.totalSold += item.quantity;
       existing.revenue += item.price * item.quantity;
-      
+
       productStats.set(item.product_id, existing);
     });
 
@@ -178,7 +190,9 @@ export const adminService = {
       .order('created_at', { ascending: false });
 
     if (searchQuery) {
-      query = query.or(`full_name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%`);
+      query = query.or(
+        `full_name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%`
+      );
     }
 
     const { data: customers, error } = await query;
@@ -194,11 +208,15 @@ export const adminService = {
     // Aggregate customer data
     const customerData = customers.map((customer: any) => {
       const customerOrders = orders.filter((order: any) => order.user_id === customer.id);
-      const totalSpent = customerOrders.reduce((sum: number, order: any) => sum + order.final_amount, 0);
+      const totalSpent = customerOrders.reduce(
+        (sum: number, order: any) => sum + order.final_amount,
+        0
+      );
       const orderCount = customerOrders.length;
-      const lastOrderDate = customerOrders.length > 0 
-        ? new Date(Math.max(...customerOrders.map((o: any) => new Date(o.created_at).getTime())))
-        : null;
+      const lastOrderDate =
+        customerOrders.length > 0
+          ? new Date(Math.max(...customerOrders.map((o: any) => new Date(o.created_at).getTime())))
+          : null;
 
       return {
         ...customer,

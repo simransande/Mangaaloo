@@ -10,7 +10,8 @@ import Newsletter from './components/Newsletter';
 
 export const metadata: Metadata = {
   title: 'Mangaaloo - Premium Printed T-Shirts | 200+ Unique Designs',
-  description: 'Shop exclusive printed t-shirts with 200+ unique designs. From bold graphics to artistic prints - premium quality t-shirts with stunning front designs.',
+  description:
+    'Shop exclusive printed t-shirts with 200+ unique designs. From bold graphics to artistic prints - premium quality t-shirts with stunning front designs.',
 };
 
 export default function Homepage() {

@@ -42,6 +42,34 @@ CREATE TABLE IF NOT EXISTS public.returns (
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Add missing columns if they don't exist (for existing returns table)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'returns' 
+        AND column_name = 'status'
+    ) THEN
+        ALTER TABLE public.returns 
+        ADD COLUMN status public.return_status DEFAULT 'pending'::public.return_status;
+        
+        RAISE NOTICE 'Added status column to returns table';
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'returns' 
+        AND column_name = 'reason'
+    ) THEN
+        ALTER TABLE public.returns 
+        ADD COLUMN reason public.return_reason;
+        
+        RAISE NOTICE 'Added reason column to returns table';
+    END IF;
+END $$;
+
 -- Return Items Table (tracks which items from order are being returned)
 CREATE TABLE IF NOT EXISTS public.return_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

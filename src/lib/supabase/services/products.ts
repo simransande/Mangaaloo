@@ -27,11 +27,7 @@ export const productService = {
 
   // Get product by ID
   async getById(id: string) {
-    const { data, error } = await supabaseClient
-      .from('products')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const { data, error } = await supabaseClient.from('products').select('*').eq('id', id).single();
 
     if (error) throw error;
     return data as Product;
@@ -51,13 +47,12 @@ export const productService = {
 
   // Create product (admin only)
   async create(product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) {
-    const { data, error } = await supabaseClient
-      .from('products')
-      .insert(product)
-      .select()
-      .single();
+    const { data, error } = await supabaseClient.from('products').insert(product).select().single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase create product error:', error);
+      throw error;
+    }
     return data as Product;
   },
 
@@ -76,10 +71,7 @@ export const productService = {
 
   // Delete product (admin only)
   async delete(id: string) {
-    const { error } = await supabaseClient
-      .from('products')
-      .delete()
-      .eq('id', id);
+    const { error } = await supabaseClient.from('products').delete().eq('id', id);
 
     if (error) throw error;
   },
@@ -93,7 +85,7 @@ export const productService = {
       .from('products')
       .update({
         stock_quantity: quantity,
-        stock_status: stockStatus
+        stock_status: stockStatus,
       })
       .eq('id', id)
       .select()
@@ -101,5 +93,39 @@ export const productService = {
 
     if (error) throw error;
     return data as Product;
+  },
+
+  // Get product images
+  async getImages(productId: string) {
+    const { data, error } = await supabaseClient
+      .from('product_images')
+      .select('*')
+      .eq('product_id', productId)
+      .order('display_order', { ascending: true });
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Add product images
+  async addImages(productId: string, imageUrls: string[], imageAlt?: string) {
+    const images = imageUrls.map((url, index) => ({
+      product_id: productId,
+      image_url: url,
+      image_alt: imageAlt || 'Product image',
+      display_order: index,
+    }));
+
+    const { data, error } = await supabaseClient.from('product_images').insert(images).select();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Delete product image
+  async deleteImage(imageId: string) {
+    const { error } = await supabaseClient.from('product_images').delete().eq('id', imageId);
+
+    if (error) throw error;
   },
 };

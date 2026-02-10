@@ -3,7 +3,7 @@ export const wishlistUtils = {
   addToWishlist: (product: any) => {
     const wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
     const exists = wishlist.find((item: any) => item.id === product.id);
-    
+
     if (!exists) {
       wishlist.push(product);
       localStorage.setItem('wishlist', JSON.stringify(wishlist));
@@ -41,5 +41,5 @@ export const wishlistUtils = {
       wishlistUtils.addToWishlist(product);
       return true;
     }
-  }
+  },
 };

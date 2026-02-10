@@ -46,13 +46,18 @@ export const authService = {
   async getCurrentUser() {
     try {
       // First check if there's a session
-      const { data: { session } } = await supabaseClient.auth.getSession();
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
       if (!session) {
         return null;
       }
 
       // Only call getUser if session exists
-      const { data: { user }, error } = await supabaseClient.auth.getUser();
+      const {
+        data: { user },
+        error,
+      } = await supabaseClient.auth.getUser();
       if (error) throw error;
       return user;
     } catch (error) {
@@ -65,7 +70,9 @@ export const authService = {
   // Get user profile
   async getUserProfile(userId: string) {
     const { data, error } = await supabaseClient
-      .from('user_profiles').select('*').eq('id', userId)
+      .from('user_profiles')
+      .select('*')
+      .eq('id', userId)
       .single();
 
     if (error) throw error;
@@ -75,7 +82,9 @@ export const authService = {
   // Update user profile
   async updateProfile(userId: string, updates: Partial<UserProfile>) {
     const { data, error } = await supabaseClient
-      .from('user_profiles').update(updates).eq('id', userId)
+      .from('user_profiles')
+      .update(updates)
+      .eq('id', userId)
       .select()
       .single();
 
@@ -86,7 +95,9 @@ export const authService = {
   // Check if user is admin
   async isAdmin(userId: string) {
     const { data, error } = await supabaseClient
-      .from('user_profiles').select('role').eq('id', userId)
+      .from('user_profiles')
+      .select('role')
+      .eq('id', userId)
       .maybeSingle();
 
     if (error) throw error;

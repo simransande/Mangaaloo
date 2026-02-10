@@ -27,6 +27,22 @@ CREATE TABLE IF NOT EXISTS public.reviews (
     UNIQUE(product_id, user_id)
 );
 
+-- Add status column if it doesn't exist (for existing reviews table)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'reviews' 
+        AND column_name = 'status'
+    ) THEN
+        ALTER TABLE public.reviews 
+        ADD COLUMN status public.review_status DEFAULT 'pending'::public.review_status;
+        
+        RAISE NOTICE 'Added status column to reviews table';
+    END IF;
+END $$;
+
 -- Review Moderation Logs Table
 CREATE TABLE IF NOT EXISTS public.review_moderation_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -14,11 +14,13 @@ export default function LoginPage() {
     <>
       <Header />
       <main className="pt-16 md:pt-20">
-        <Suspense fallback={
-          <div className="flex justify-center items-center min-h-screen">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          </div>
-        }>
+        <Suspense
+          fallback={
+            <div className="flex justify-center items-center min-h-screen">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          }
+        >
           <LoginForm />
         </Suspense>
       </main>

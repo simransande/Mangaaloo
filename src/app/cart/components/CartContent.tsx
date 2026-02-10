@@ -54,7 +54,7 @@ export default function CartContent() {
     const fetchCartItems = async () => {
       try {
         setLoading(true);
-        
+
         // Try to get current user, but don't fail if not authenticated
         let user = null;
         try {
@@ -62,7 +62,7 @@ export default function CartContent() {
         } catch (authError) {
           console.log('User not authenticated, using guest cart');
         }
-        
+
         if (!user) {
           // Guest user - use local storage
           const localCart = localStorage.getItem('cart');
@@ -72,7 +72,7 @@ export default function CartContent() {
             // Track view cart event
             const totalValue = items.reduce((sum: number, item: CartItem) => {
               const price = item.discountedPrice || item.price;
-              return sum + (price * item.quantity);
+              return sum + price * item.quantity;
             }, 0);
             ecommerceTracking.viewCart(
               items.map((item: CartItem) => ({
@@ -92,24 +92,24 @@ export default function CartContent() {
         const items = await cartService.getCartItems(user.id);
         const formattedItems: CartItem[] = items.map((item: any) => ({
           id: item.id,
-          name: item.products.name,
-          price: item.products.price,
-          discountedPrice: item.products.discounted_price,
-          image: item.products.image_url,
-          imageAlt: item.products.image_alt,
+          name: item.name,
+          price: item.price,
+          discountedPrice: item.discountedPrice,
+          image: item.image,
+          imageAlt: item.imageAlt,
           color: item.color || '',
           size: item.size || '',
           quantity: item.quantity,
-          stock: item.products.stock_quantity,
+          stock: item.stock,
         }));
         setCartItems(formattedItems);
         // Track view cart event
         const totalValue = formattedItems.reduce((sum, item) => {
           const price = item.discountedPrice || item.price;
-          return sum + (price * item.quantity);
+          return sum + price * item.quantity;
         }, 0);
         ecommerceTracking.viewCart(
-          formattedItems.map(item => ({
+          formattedItems.map((item) => ({
             id: item.id,
             name: item.name,
             price: item.discountedPrice || item.price,
@@ -140,13 +140,13 @@ export default function CartContent() {
     try {
       const subtotal = cartItems.reduce((sum, item) => {
         const price = item.discountedPrice || item.price;
-        return sum + (price * item.quantity);
+        return sum + price * item.quantity;
       }, 0);
 
       const result = await discountService.applyDiscount(couponCode, subtotal);
-      setAppliedCoupon({ 
-        code: couponCode, 
-        discount: result.discountAmount 
+      setAppliedCoupon({
+        code: couponCode,
+        discount: result.discountAmount,
       });
     } catch (err: any) {
       setCouponError(err.message || 'Invalid coupon code');
@@ -163,8 +163,9 @@ export default function CartContent() {
 
   const handleCheckout = () => {
     // Check if user is logged in
-    authService.getCurrentUser()
-      .then(user => {
+    authService
+      .getCurrentUser()
+      .then((user) => {
         if (!user) {
           // Save cart to localStorage before redirecting to login
           if (cartItems.length > 0) {
@@ -173,14 +174,14 @@ export default function CartContent() {
           router.push('/login?redirect=/checkout');
           return;
         }
-        
+
         // Track begin checkout event
         const totalValue = cartItems.reduce((sum, item) => {
           const price = item.discountedPrice || item.price;
-          return sum + (price * item.quantity);
+          return sum + price * item.quantity;
         }, 0);
         ecommerceTracking.beginCheckout(
-          cartItems.map(item => ({
+          cartItems.map((item) => ({
             id: item.id,
             name: item.name,
             price: item.discountedPrice || item.price,
@@ -188,11 +189,11 @@ export default function CartContent() {
           })),
           totalValue
         );
-        
+
         // Navigate to checkout page
         router.push('/checkout');
       })
-      .catch(err => {
+      .catch((err) => {
         console.error('Auth check error:', err);
         // Save cart and redirect to login
         if (cartItems.length > 0) {
@@ -214,8 +215,8 @@ export default function CartContent() {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
         <p className="text-red-600 mb-4">{error}</p>
-        <button 
-          onClick={() => window.location.reload()} 
+        <button
+          onClick={() => window.location.reload()}
           className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
         >
           Retry
@@ -267,73 +268,15 @@ export default function CartContent() {
 
             {/* Order Summary */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-xl shadow-md p-6 sticky top-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">Order Summary</h2>
-                
-                {/* Coupon Section */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Coupon Code
-                  </label>
-                  {appliedCoupon ? (
-                    <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <div>
-                        <p className="text-sm font-semibold text-green-700">{appliedCoupon.code}</p>
-                        <p className="text-xs text-green-600">-₹{appliedCoupon.discount.toFixed(2)} discount applied</p>
-                      </div>
-                      <button
-                        onClick={handleRemoveCoupon}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Icon name="XMarkIcon" size={20} />
-                      </button>
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={couponCode}
-                          onChange={(e) => setCouponCode(e.target.value)}
-                          placeholder="Enter code"
-                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
-                        />
-                        <button
-                          onClick={handleApplyCoupon}
-                          disabled={couponLoading}
-                          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
-                        >
-                          {couponLoading ? 'Applying...' : 'Apply'}
-                        </button>
-                      </div>
-                      {couponError && (
-                        <p className="text-xs text-red-600 mt-2">{couponError}</p>
-                      )}
-                      <p className="text-xs text-gray-500 mt-2">
-                        Try: WELCOME10, SAVE20, FLAT500
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <OrderSummary
-                  cartItems={cartItems}
-                  couponCode={couponCode}
-                  setCouponCode={setCouponCode}
-                  appliedCoupon={appliedCoupon}
-                  handleApplyCoupon={handleApplyCoupon}
-                  handleRemoveCoupon={handleRemoveCoupon}
-                  handleCheckout={handleCheckout}
-                />
-
-                <button
-                  onClick={handleCheckout}
-                  disabled={cartItems.length === 0}
-                  className="w-full px-8 py-4 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary/90 transition-all hover-lift disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Proceed to Checkout
-                </button>
-              </div>
+              <OrderSummary
+                cartItems={cartItems}
+                couponCode={couponCode}
+                setCouponCode={setCouponCode}
+                appliedCoupon={appliedCoupon}
+                handleApplyCoupon={handleApplyCoupon}
+                handleRemoveCoupon={handleRemoveCoupon}
+                handleCheckout={handleCheckout}
+              />
             </div>
           </div>
         </div>

@@ -46,11 +46,17 @@ export default function RegisterForm() {
     setLoading(true);
 
     try {
-      const { user, session } = await authService.signUp(formData.email, formData.password, formData.name);
+      const { user, session } = await authService.signUp(
+        formData.email,
+        formData.password,
+        formData.name
+      );
 
       // Wait for session to be established
       if (!session) {
-        setSuccess('Verification email sent! Please check your email to verify your account, then you can log in.');
+        setSuccess(
+          'Verification email sent! Please check your email to verify your account, then you can log in.'
+        );
         setLoading(false);
         // Clear form
         setFormData({
@@ -67,7 +73,7 @@ export default function RegisterForm() {
         funnelTracking.registrationComplete(user.id);
 
         // Wait for auth state to propagate
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
         // Create customer record with retry logic
         let customerCreated = false;
@@ -86,7 +92,7 @@ export default function RegisterForm() {
             retries--;
             if (retries > 0) {
               // Wait 500ms before retry
-              await new Promise(resolve => setTimeout(resolve, 500));
+              await new Promise((resolve) => setTimeout(resolve, 500));
             }
           }
         }
@@ -139,7 +145,10 @@ export default function RegisterForm() {
             <div className="flex-1">
               <p className="font-semibold mb-1">Success!</p>
               <p>{success}</p>
-              <Link href="/login" className="inline-block mt-2 font-bold underline hover:no-underline">
+              <Link
+                href="/login"
+                className="inline-block mt-2 font-bold underline hover:no-underline"
+              >
                 Go to Login
               </Link>
             </div>
@@ -202,7 +211,10 @@ export default function RegisterForm() {
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Confirm Password
             </label>
             <input

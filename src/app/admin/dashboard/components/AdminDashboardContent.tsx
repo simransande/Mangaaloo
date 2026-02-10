@@ -13,7 +13,21 @@ import { adminService } from '@/lib/supabase/services/admin';
 import { customerService, type Customer } from '@/lib/supabase/services/customers';
 import { supabaseClient } from '@/lib/supabase/client';
 import type { Order, Product } from '@/lib/supabase/types';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 import { useToast } from '@/lib/contexts/ToastContext';
 
 interface AnalyticsData {
@@ -25,6 +39,7 @@ interface AnalyticsData {
 }
 
 export default function AdminDashboardContent() {
+  const PRODUCT_IMAGE_BUCKET = 'products';
   const router = useRouter();
   const { showToast } = useToast();
   const [userEmail, setUserEmail] = useState('');
@@ -40,13 +55,19 @@ export default function AdminDashboardContent() {
   const [pendingReviewsCount, setPendingReviewsCount] = useState(0);
   const [moderatingReviewId, setModeratingReviewId] = useState<string | null>(null);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
-  const [analyticsTimeRange, setAnalyticsTimeRange] = useState<'daily' | 'monthly' | 'yearly'>('daily');
+  const [analyticsTimeRange, setAnalyticsTimeRange] = useState<'daily' | 'monthly' | 'yearly'>(
+    'daily'
+  );
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [productToDeleteConfirm, setProductToDeleteConfirm] = useState<string | null>(null);
   const [showProductForm, setShowProductForm] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string>('');
+  const [imagePreview] = useState<string>('');
+  const [formImageUrl, setFormImageUrl] = useState<string>('');
+  const [productImages, setProductImages] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalRevenue: 0,
     totalOrders: 0,
@@ -114,16 +135,17 @@ export default function AdminDashboardContent() {
         // Fetch customers
         const allCustomers = await customerService.getAll();
         setCustomers(allCustomers);
-        console.log('Loaded customers:', allCustomers.length);
+        console.info('Loaded customers:', allCustomers.length);
 
         // Fetch analytics data
-        const [dailyStats, monthlyStats, statusBreakdown, topProducts, lowStockProducts] = await Promise.all([
-          adminService.getDailyStats(30),
-          adminService.getMonthlyStats(12),
-          adminService.getOrderStatusBreakdown(),
-          adminService.getTopProducts(10),
-          adminService.getLowStockProducts(10),
-        ]);
+        const [dailyStats, monthlyStats, statusBreakdown, topProducts, lowStockProducts] =
+          await Promise.all([
+            adminService.getDailyStats(30),
+            adminService.getMonthlyStats(12),
+            adminService.getOrderStatusBreakdown(),
+            adminService.getTopProducts(10),
+            adminService.getLowStockProducts(10),
+          ]);
 
         setAnalyticsData({
           dailyStats,
@@ -139,7 +161,7 @@ export default function AdminDashboardContent() {
           totalRevenue,
           totalOrders: orders.length,
           totalProducts: allProducts.length,
-          totalCustomers: new Set(orders.map(o => o.user_id).filter(Boolean)).size,
+          totalCustomers: new Set(orders.map((o) => o.user_id).filter(Boolean)).size,
         });
 
         // Subscribe to real-time order updates
@@ -209,10 +231,14 @@ export default function AdminDashboardContent() {
     }
   };
 
-  const handleModerateReview = async (reviewId: string, status: 'approved' | 'rejected', reason?: string) => {
+  const handleModerateReview = async (
+    reviewId: string,
+    status: 'approved' | 'rejected',
+    reason?: string
+  ) => {
     try {
       setModeratingReviewId(reviewId);
-      let user = await authService.getCurrentUser();
+      const user = await authService.getCurrentUser();
       if (!user) return;
 
       await reviewService.moderate(reviewId, status, user.id, reason);
@@ -235,13 +261,12 @@ export default function AdminDashboardContent() {
   };
 
   const handleDeleteProduct = async (productId: string) => {
-    if (!confirm('Are you sure you want to delete this product?')) return;
-
     try {
       setProductToDelete(productId);
       await productService.delete(productId);
-      setProducts(products.filter(p => p.id !== productId));
+      setProducts(products.filter((p) => p.id !== productId));
       showToast('Product deleted successfully!', 'success');
+      setProductToDeleteConfirm(null);
     } catch (err: any) {
       console.error('Error deleting product:', err);
       showToast(`Failed to delete product: ${err.message}`, 'error');
@@ -254,96 +279,152 @@ export default function AdminDashboardContent() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
-    // Get colors and handle empty case
     const colorsInput = formData.get('colors') as string;
-    const colors = colorsInput ? colorsInput.split(',').map(c => c.trim()).filter(Boolean) : [];
+    const colors = colorsInput
+      ? colorsInput
+          .split(',')
+          .map((c) => c.trim())
+          .filter(Boolean)
+      : [];
 
     const productData = {
       name: formData.get('name') as string,
       description: formData.get('description') as string,
       price: parseFloat(formData.get('price') as string),
-      discounted_price: formData.get('discounted_price') ? parseFloat(formData.get('discounted_price') as string) : null,
-      image_url: formData.get('image_url') as string,
+      discounted_price: formData.get('discounted_price')
+        ? parseFloat(formData.get('discounted_price') as string)
+        : null,
+      image_url: productImages[0] || formImageUrl || (formData.get('image_url') as string),
       image_alt: formData.get('image_alt') as string,
       colors: colors.length > 0 ? colors : [],
-      sizes: (formData.get('sizes') as string).split(',').map(s => s.trim()).filter(Boolean),
+      sizes: (formData.get('sizes') as string)
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
       stock_quantity: parseInt(formData.get('stock_quantity') as string),
       stock_status: formData.get('stock_status') as Product['stock_status'],
-      badge: formData.get('badge') as string || null,
+      badge: (formData.get('badge') as string) || null,
     };
 
+    // Validation
+    if (!productData.name || productData.name.trim() === '') {
+      showToast('Product name is required', 'error');
+      return;
+    }
+    if (!productData.price || isNaN(productData.price) || productData.price <= 0) {
+      showToast('Valid price is required', 'error');
+      return;
+    }
+    if (!productData.image_url || productData.image_url.trim() === '') {
+      showToast('Product image is required', 'error');
+      return;
+    }
+    if (
+      !productData.stock_quantity ||
+      isNaN(productData.stock_quantity) ||
+      productData.stock_quantity < 0
+    ) {
+      showToast('Valid stock quantity is required', 'error');
+      return;
+    }
+
+    console.info('Saving product with data:', productData);
+
     try {
+      let savedProduct: Product;
       if (productToEdit) {
-        const updated = await productService.update(productToEdit.id, productData as any);
-        setProducts(products.map(p => p.id === updated.id ? updated : p));
+        savedProduct = await productService.update(productToEdit.id, productData as any);
+        setProducts(products.map((p) => (p.id === savedProduct.id ? savedProduct : p)));
         showToast('Product updated successfully!', 'success');
       } else {
-        const created = await productService.create(productData as any);
-        setProducts([created, ...products]);
+        savedProduct = await productService.create(productData as any);
+        setProducts([savedProduct, ...products]);
         showToast('Product created successfully!', 'success');
       }
+
+      // Save additional images
+      if (productImages.length > 1) {
+        await productService.addImages(
+          savedProduct.id,
+          productImages.slice(1),
+          productData.image_alt
+        );
+        showToast(`${productImages.length - 1} additional image(s) saved`, 'success');
+      }
+
       setShowProductForm(false);
       setProductToEdit(null);
       setImagePreview('');
+      setFormImageUrl('');
+      setProductImages([]);
+      setExistingImages([]);
     } catch (err: any) {
       console.error('Error saving product:', err);
-      showToast(`Failed to save product: ${err.message}`, 'error');
+      const errorMessage =
+        err?.message || err?.error?.message || JSON.stringify(err) || 'Unknown error occurred';
+      showToast(`Failed to save product: ${errorMessage}`, 'error');
     }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      showToast('Please select an image file', 'warning');
-      return;
-    }
+    setUploadingImage(true);
+    const newImages: string[] = [];
+    const hadExistingImages = productImages.length > 0;
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('Image size should be less than 5MB', 'warning');
-      return;
-    }
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
 
-    try {
-      setUploadingImage(true);
-
-      // Create unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `products/${fileName}`;
-
-      // Upload to Supabase Storage
-      const { data, error } = await supabaseClient.storage
-        .from('products')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (error) throw error;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabaseClient.storage
-        .from('products')
-        .getPublicUrl(filePath);
-
-      // Set image URL in form
-      const imageUrlInput = document.querySelector('input[name="image_url"]') as HTMLInputElement;
-      if (imageUrlInput) {
-        imageUrlInput.value = publicUrl;
+      if (!file.type.startsWith('image/')) {
+        showToast(`${file.name} is not an image`, 'warning');
+        continue;
       }
 
-      setImagePreview(publicUrl);
-      showToast('Image uploaded successfully!', 'success');
-    } catch (err: any) {
-      console.error('Error uploading image:', err);
-      showToast(`Failed to upload image: ${err.message}`, 'error');
-    } finally {
-      setUploadingImage(false);
+      if (file.size > 10 * 1024 * 1024) {
+        showToast(`${file.name} is too large (max 10MB)`, 'error');
+        continue;
+      }
+
+      try {
+        const fileExt = file.name.split('.').pop() || 'jpg';
+        const filePath = `products/${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
+
+        const { error: uploadError } = await supabaseClient.storage
+          .from(PRODUCT_IMAGE_BUCKET)
+          .upload(filePath, file, {
+            contentType: file.type,
+            upsert: false,
+          });
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        const { data } = supabaseClient.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(filePath);
+
+        if (!data?.publicUrl) {
+          throw new Error('Failed to get public URL');
+        }
+
+        newImages.push(data.publicUrl);
+      } catch (uploadError: any) {
+        console.error('Image upload failed:', uploadError);
+        showToast(`Failed to upload ${file.name}`, 'error');
+      }
     }
+
+    if (newImages.length > 0) {
+      setProductImages((prev) => [...prev, ...newImages]);
+      if (!hadExistingImages && !formImageUrl) {
+        setFormImageUrl(newImages[0]);
+      }
+      showToast(`${newImages.length} image(s) added`, 'success');
+    }
+
+    setUploadingImage(false);
+    e.target.value = '';
   };
 
   const handleLogout = async () => {
@@ -359,7 +440,12 @@ export default function AdminDashboardContent() {
     { id: 'overview', label: 'Dashboard', icon: 'HomeIcon' },
     { id: 'products', label: 'Products', icon: 'ShoppingBagIcon' },
     { id: 'orders', label: 'Orders', icon: 'ClipboardDocumentListIcon' },
-    { id: 'reviews', label: 'Reviews', icon: 'StarIcon', badge: pendingReviewsCount > 0 ? pendingReviewsCount : undefined },
+    {
+      id: 'reviews',
+      label: 'Reviews',
+      icon: 'StarIcon',
+      badge: pendingReviewsCount > 0 ? pendingReviewsCount : undefined,
+    },
     { id: 'returns', label: 'Returns', icon: 'ArrowUturnLeftIcon' },
     { id: 'customers', label: 'Customers', icon: 'UsersIcon' },
     { id: 'inventory', label: 'Inventory', icon: 'CubeIcon' },
@@ -369,23 +455,44 @@ export default function AdminDashboardContent() {
   ];
 
   const statsDisplay = [
-    { label: 'Total Revenue', value: `₹${stats.totalRevenue.toFixed(2)}`, icon: 'CurrencyDollarIcon', color: 'green' },
-    { label: 'Total Orders', value: stats.totalOrders.toString(), icon: 'ShoppingBagIcon', color: 'blue' },
-    { label: 'Total Products', value: stats.totalProducts.toString(), icon: 'CubeIcon', color: 'purple' },
-    { label: 'Total Customers', value: stats.totalCustomers.toString(), icon: 'UsersIcon', color: 'orange' },
+    {
+      label: 'Total Revenue',
+      value: `₹${stats.totalRevenue.toFixed(2)}`,
+      icon: 'CurrencyDollarIcon',
+      color: 'green',
+    },
+    {
+      label: 'Total Orders',
+      value: stats.totalOrders.toString(),
+      icon: 'ShoppingBagIcon',
+      color: 'blue',
+    },
+    {
+      label: 'Total Products',
+      value: stats.totalProducts.toString(),
+      icon: 'CubeIcon',
+      color: 'purple',
+    },
+    {
+      label: 'Total Customers',
+      value: stats.totalCustomers.toString(),
+      icon: 'UsersIcon',
+      color: 'orange',
+    },
   ];
 
   const CHART_COLORS = ['#4A9B8E', '#004E89', '#B8D4E3', '#10B981', '#8B5CF6'];
 
-  const filteredOrders = orderStatusFilter === 'all'
-    ? allOrders
-    : allOrders.filter(order => order.status === orderStatusFilter);
+  const filteredOrders =
+    orderStatusFilter === 'all'
+      ? allOrders
+      : allOrders.filter((order) => order.status === orderStatusFilter);
 
   const handleSearchCustomers = () => {
     // This can be used for manual search if needed
   };
 
-  const filteredCustomers = customers.filter(customer => {
+  const filteredCustomers = customers.filter((customer) => {
     const query = (customerSearchQuery || '').toLowerCase();
     return (
       (customer.full_name || '').toLowerCase().includes(query) ||
@@ -419,8 +526,11 @@ export default function AdminDashboardContent() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <aside className={`bg-white shadow-lg transition-all duration-300 ${isSidebarOpen ? 'w-64' : 'w-20'
-        } flex flex-col`}>
+      <aside
+        className={`bg-white shadow-lg transition-all duration-300 ${
+          isSidebarOpen ? 'w-64' : 'w-20'
+        } flex flex-col`}
+      >
         {/* Logo */}
         <div className="p-6 border-b border-gray-200">
           <Link href="/homepage" className="flex items-center gap-3">
@@ -436,7 +546,7 @@ export default function AdminDashboardContent() {
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2">
-          {menuItems.map((item) => (
+          {menuItems.map((item) =>
             item.id === 'returns' ? (
               <Link
                 key={item.id}
@@ -451,9 +561,11 @@ export default function AdminDashboardContent() {
               <button
                 key={item.id}
                 onClick={() => setActiveSection(item.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors relative ${activeSection === item.id
-                  ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors relative ${
+                  activeSection === item.id
+                    ? 'bg-primary text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
                 title={!isSidebarOpen ? item.label : ''}
               >
                 <Icon name={item.icon as any} size={20} />
@@ -465,7 +577,7 @@ export default function AdminDashboardContent() {
                 )}
               </button>
             )
-          ))}
+          )}
         </nav>
 
         {/* Logout */}
@@ -510,14 +622,30 @@ export default function AdminDashboardContent() {
                 {statsDisplay.map((stat, index) => (
                   <div key={index} className="bg-white rounded-xl shadow-md p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <div className={`p-3 rounded-lg ${stat.color === 'green' ? 'bg-green-100' :
-                        stat.color === 'blue' ? 'bg-blue-100' :
-                          stat.color === 'purple' ? 'bg-purple-100' : 'bg-orange-100'
-                        }`}>
-                        <Icon name={stat.icon as any} size={24} className={`${stat.color === 'green' ? 'text-green-600' :
-                          stat.color === 'blue' ? 'text-blue-600' :
-                            stat.color === 'purple' ? 'text-purple-600' : 'text-orange-600'
-                          }`} />
+                      <div
+                        className={`p-3 rounded-lg ${
+                          stat.color === 'green'
+                            ? 'bg-green-100'
+                            : stat.color === 'blue'
+                              ? 'bg-blue-100'
+                              : stat.color === 'purple'
+                                ? 'bg-purple-100'
+                                : 'bg-orange-100'
+                        }`}
+                      >
+                        <Icon
+                          name={stat.icon as any}
+                          size={24}
+                          className={`${
+                            stat.color === 'green'
+                              ? 'text-green-600'
+                              : stat.color === 'blue'
+                                ? 'text-blue-600'
+                                : stat.color === 'purple'
+                                  ? 'text-purple-600'
+                                  : 'text-orange-600'
+                          }`}
+                        />
                       </div>
                     </div>
                     <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
@@ -531,7 +659,9 @@ export default function AdminDashboardContent() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Revenue Trend Chart */}
                   <div className="bg-white rounded-xl shadow-md p-6">
-                    <h2 className="text-xl font-bold text-gray-900 mb-4">Revenue Trend (Last 30 Days)</h2>
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">
+                      Revenue Trend (Last 30 Days)
+                    </h2>
                     <ResponsiveContainer width="100%" height={300}>
                       <LineChart data={analyticsData.dailyStats}>
                         <CartesianGrid strokeDasharray="3 3" />
@@ -539,14 +669,22 @@ export default function AdminDashboardContent() {
                         <YAxis tick={{ fontSize: 12 }} />
                         <Tooltip />
                         <Legend />
-                        <Line type="monotone" dataKey="revenue" stroke={CHART_COLORS[0]} strokeWidth={2} name="Revenue (₹)" />
+                        <Line
+                          type="monotone"
+                          dataKey="revenue"
+                          stroke={CHART_COLORS[0]}
+                          strokeWidth={2}
+                          name="Revenue (₹)"
+                        />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
 
                   {/* Order Status Breakdown */}
                   <div className="bg-white rounded-xl shadow-md p-6">
-                    <h2 className="text-xl font-bold text-gray-900 mb-4">Order Status Distribution</h2>
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">
+                      Order Status Distribution
+                    </h2>
                     <ResponsiveContainer width="100%" height={300}>
                       <PieChart>
                         <Pie
@@ -559,7 +697,10 @@ export default function AdminDashboardContent() {
                           label={(entry) => `${entry.status}: ${entry.count}`}
                         >
                           {analyticsData.statusBreakdown.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={CHART_COLORS[index % CHART_COLORS.length]}
+                            />
                           ))}
                         </Pie>
                         <Tooltip />
@@ -569,7 +710,9 @@ export default function AdminDashboardContent() {
 
                   {/* Daily Orders Chart */}
                   <div className="bg-white rounded-xl shadow-md p-6">
-                    <h2 className="text-xl font-bold text-gray-900 mb-4">Daily Orders (Last 30 Days)</h2>
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">
+                      Daily Orders (Last 30 Days)
+                    </h2>
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={analyticsData.dailyStats}>
                         <CartesianGrid strokeDasharray="3 3" />
@@ -588,12 +731,17 @@ export default function AdminDashboardContent() {
                     <h2 className="text-xl font-bold text-gray-900 mb-4">Top Selling Products</h2>
                     <div className="space-y-3 max-h-[300px] overflow-y-auto">
                       {analyticsData.topProducts.map((product, index) => (
-                        <div key={product.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                        <div
+                          key={product.id}
+                          className="flex items-center justify-between p-3 border border-gray-200 rounded-lg"
+                        >
                           <div className="flex items-center gap-3">
                             <span className="font-bold text-gray-400 text-lg">#{index + 1}</span>
                             <div>
                               <p className="font-semibold text-gray-900">{product.name}</p>
-                              <p className="text-sm text-gray-600">Sold: {product.totalSold} units</p>
+                              <p className="text-sm text-gray-600">
+                                Sold: {product.totalSold} units
+                              </p>
                             </div>
                           </div>
                           <p className="font-bold text-green-600">₹{product.revenue.toFixed(2)}</p>
@@ -611,26 +759,50 @@ export default function AdminDashboardContent() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Order ID</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Customer</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Amount</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Date</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Actions</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                          Order ID
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                          Customer
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                          Amount
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                          Status
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                          Date
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                          Actions
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {recentOrders.map((order) => (
                         <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
-                          <td className="py-3 px-4 text-sm font-medium text-gray-900">{order.order_number}</td>
+                          <td className="py-3 px-4 text-sm font-medium text-gray-900">
+                            {order.order_number}
+                          </td>
                           <td className="py-3 px-4 text-sm text-gray-700">{order.customer_name}</td>
-                          <td className="py-3 px-4 text-sm font-semibold text-gray-900">₹{order.final_amount}</td>
+                          <td className="py-3 px-4 text-sm font-semibold text-gray-900">
+                            ₹{order.final_amount}
+                          </td>
                           <td className="py-3 px-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${order.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                              order.status === 'shipped' ? 'bg-blue-100 text-blue-700' :
-                                order.status === 'processing' ? 'bg-yellow-100 text-yellow-700' :
-                                  order.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
-                              }`}>
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                order.status === 'delivered'
+                                  ? 'bg-green-100 text-green-700'
+                                  : order.status === 'shipped'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : order.status === 'processing'
+                                      ? 'bg-yellow-100 text-yellow-700'
+                                      : order.status === 'cancelled'
+                                        ? 'bg-red-100 text-red-700'
+                                        : 'bg-gray-100 text-gray-700'
+                              }`}
+                            >
                               {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                             </span>
                           </td>
@@ -640,7 +812,9 @@ export default function AdminDashboardContent() {
                           <td className="py-3 px-4">
                             <select
                               value={order.status}
-                              onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value as Order['status'])}
+                              onChange={(e) =>
+                                handleUpdateOrderStatus(order.id, e.target.value as Order['status'])
+                              }
                               disabled={updatingOrderId === order.id}
                               className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-primary disabled:opacity-50"
                             >
@@ -667,9 +841,14 @@ export default function AdminDashboardContent() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {analyticsData.lowStockProducts.map((product) => (
-                      <div key={product.id} className="bg-white p-4 rounded-lg border border-red-200">
+                      <div
+                        key={product.id}
+                        className="bg-white p-4 rounded-lg border border-red-200"
+                      >
                         <p className="font-semibold text-gray-900">{product.name}</p>
-                        <p className="text-sm text-red-600 font-bold">Only {product.stock_quantity} left</p>
+                        <p className="text-sm text-red-600 font-bold">
+                          Only {product.stock_quantity} left
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -687,6 +866,8 @@ export default function AdminDashboardContent() {
                   onClick={() => {
                     setProductToEdit(null);
                     setShowProductForm(true);
+                    setImagePreview('');
+                    setFormImageUrl('');
                   }}
                   className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 font-semibold flex items-center gap-2"
                 >
@@ -708,6 +889,7 @@ export default function AdminDashboardContent() {
                           setShowProductForm(false);
                           setProductToEdit(null);
                           setImagePreview('');
+                          setFormImageUrl('');
                         }}
                         className="p-2 hover:bg-gray-100 rounded-lg"
                       >
@@ -716,7 +898,9 @@ export default function AdminDashboardContent() {
                     </div>
                     <form onSubmit={handleSaveProduct} className="p-6 space-y-4">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Product Name *</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Product Name *
+                        </label>
                         <input
                           type="text"
                           name="name"
@@ -726,7 +910,9 @@ export default function AdminDashboardContent() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Description
+                        </label>
                         <textarea
                           name="description"
                           defaultValue={productToEdit?.description}
@@ -736,7 +922,9 @@ export default function AdminDashboardContent() {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">Price (₹) *</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            Price (₹) *
+                          </label>
                           <input
                             type="number"
                             name="price"
@@ -747,7 +935,9 @@ export default function AdminDashboardContent() {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">Discounted Price (₹)</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            Discounted Price (₹)
+                          </label>
                           <input
                             type="number"
                             name="discounted_price"
@@ -760,52 +950,121 @@ export default function AdminDashboardContent() {
 
                       {/* Image Upload Section */}
                       <div className="space-y-3">
-                        <label className="block text-sm font-semibold text-gray-700">Product Image *</label>
+                        <label className="block text-sm font-semibold text-gray-700">
+                          Product Images *
+                        </label>
 
-                        {/* File Upload */}
+                        {/* File Upload Button */}
                         <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
                           <input
                             type="file"
                             accept="image/*"
+                            multiple
                             onChange={handleImageUpload}
                             className="hidden"
                             id="image-upload"
                           />
                           <label
                             htmlFor="image-upload"
-                            className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                            className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                           >
                             <Icon name="PhotoIcon" size={20} />
-                            {uploadingImage ? 'Uploading...' : 'Upload Image from Computer'}
+                            {uploadingImage ? 'Uploading...' : 'Upload Multiple Images'}
                           </label>
-                          <p className="text-xs text-gray-500 mt-2">Or enter image URL below</p>
+                          <p className="text-xs text-gray-500 mt-2">
+                            Select multiple images (max 10MB each)
+                          </p>
                         </div>
 
-                        {/* Image Preview */}
-                        {(imagePreview || productToEdit?.image_url) && (
-                          <div className="relative w-full h-48 bg-gray-100 rounded-lg overflow-hidden">
-                            <AppImage
-                              src={imagePreview || productToEdit?.image_url || ''}
-                              alt="Product preview"
-                              className="w-full h-full object-contain"
-                            />
+                        {/* Existing Images */}
+                        {existingImages.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-gray-700 mb-2">
+                              Existing Images:
+                            </p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {existingImages.map((img) => (
+                                <div key={img.id} className="relative group">
+                                  <AppImage
+                                    src={img.image_url}
+                                    alt="Product"
+                                    className="w-full h-24 object-cover rounded"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      await productService.deleteImage(img.id);
+                                      setExistingImages(
+                                        existingImages.filter((i) => i.id !== img.id)
+                                      );
+                                      showToast('Image deleted', 'success');
+                                    }}
+                                    className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded opacity-0 group-hover:opacity-100"
+                                  >
+                                    <Icon name="XMarkIcon" size={16} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
 
-                        {/* Image URL Input */}
+                        {/* New Images Preview */}
+                        {productImages.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-gray-700 mb-2">
+                              New Images ({productImages.length}):
+                            </p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {productImages.map((img, idx) => (
+                                <div key={idx} className="relative group">
+                                  <AppImage
+                                    src={img}
+                                    alt={`Preview ${idx + 1}`}
+                                    className="w-full h-24 object-cover rounded"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setProductImages((prev) => {
+                                        const nextImages = prev.filter((_, i) => i !== idx);
+                                        if (idx === 0) {
+                                          setFormImageUrl(nextImages[0] || '');
+                                        }
+                                        return nextImages;
+                                      });
+                                    }}
+                                    className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded opacity-0 group-hover:opacity-100"
+                                  >
+                                    <Icon name="XMarkIcon" size={16} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Image URL Input (fallback) */}
                         <input
-                          type="url"
+                          type="text"
                           name="image_url"
-                          defaultValue={productToEdit?.image_url}
-                          required
-                          placeholder="https://example.com/image.jpg"
-                          onChange={(e) => setImagePreview(e.target.value)}
+                          value={formImageUrl}
+                          onChange={(e) => {
+                            setFormImageUrl(e.target.value);
+                            if (e.target.value && !productImages.includes(e.target.value)) {
+                              setProductImages([e.target.value]);
+                            }
+                          }}
+                          autoComplete="off"
+                          placeholder="Or paste image URL"
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Image Alt Text *</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Image Alt Text *
+                        </label>
                         <input
                           type="text"
                           name="image_alt"
@@ -819,7 +1078,9 @@ export default function AdminDashboardContent() {
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-2">
                             Colors (optional)
-                            <span className="text-xs text-gray-500 block mt-1">Leave empty if no colors</span>
+                            <span className="text-xs text-gray-500 block mt-1">
+                              Leave empty if no colors
+                            </span>
                           </label>
                           <input
                             type="text"
@@ -830,7 +1091,9 @@ export default function AdminDashboardContent() {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">Sizes (comma-separated)</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            Sizes (comma-separated)
+                          </label>
                           <input
                             type="text"
                             name="sizes"
@@ -842,7 +1105,9 @@ export default function AdminDashboardContent() {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">Stock Quantity *</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            Stock Quantity *
+                          </label>
                           <input
                             type="number"
                             name="stock_quantity"
@@ -852,7 +1117,9 @@ export default function AdminDashboardContent() {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">Stock Status *</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            Stock Status *
+                          </label>
                           <select
                             name="stock_status"
                             defaultValue={productToEdit?.stock_status}
@@ -866,7 +1133,9 @@ export default function AdminDashboardContent() {
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Badge (optional)</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Badge (optional)
+                        </label>
                         <input
                           type="text"
                           name="badge"
@@ -889,6 +1158,7 @@ export default function AdminDashboardContent() {
                             setShowProductForm(false);
                             setProductToEdit(null);
                             setImagePreview('');
+                            setFormImageUrl('');
                           }}
                           className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-semibold disabled:opacity-50"
                         >
@@ -903,7 +1173,10 @@ export default function AdminDashboardContent() {
               {/* Products Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {products.map((product) => (
-                  <div key={product.id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                  <div
+                    key={product.id}
+                    className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                  >
                     <div className="relative">
                       <AppImage
                         src={product.image_url}
@@ -917,36 +1190,60 @@ export default function AdminDashboardContent() {
                           {product.badge}
                         </span>
                       )}
-                      <span className={`absolute top-3 right-3 px-3 py-1 text-xs font-bold rounded-full ${product.stock_status === 'in-stock' ? 'bg-green-100 text-green-700' :
-                        product.stock_status === 'low-stock' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
-                        }`}>
+                      <span
+                        className={`absolute top-3 right-3 px-3 py-1 text-xs font-bold rounded-full ${
+                          product.stock_status === 'in-stock'
+                            ? 'bg-green-100 text-green-700'
+                            : product.stock_status === 'low-stock'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-red-100 text-red-700'
+                        }`}
+                      >
                         {product.stock_status}
                       </span>
                     </div>
                     <div className="p-4">
                       <h3 className="font-bold text-gray-900 mb-2">{product.name}</h3>
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{product.description}</p>
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                        {product.description}
+                      </p>
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           <p className="text-lg font-bold text-gray-900">₹{product.price}</p>
                           {product.discounted_price && (
-                            <p className="text-sm text-gray-500 line-through">₹{product.discounted_price}</p>
+                            <p className="text-sm text-gray-500 line-through">
+                              ₹{product.discounted_price}
+                            </p>
                           )}
                         </div>
                         <p className="text-sm text-gray-600">Stock: {product.stock_quantity}</p>
                       </div>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             setProductToEdit(product);
                             setShowProductForm(true);
+                            const imageUrl = product.image_url.includes('drive.google.com')
+                              ? ''
+                              : product.image_url;
+                            setImagePreview(imageUrl);
+                            setFormImageUrl(imageUrl);
+                            setProductImages(imageUrl ? [imageUrl] : []);
+
+                            // Load existing images
+                            try {
+                              const images = await productService.getImages(product.id);
+                              setExistingImages(images);
+                            } catch (err) {
+                              console.error('Failed to load images:', err);
+                            }
                           }}
                           className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold text-sm"
                         >
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDeleteProduct(product.id)}
+                          onClick={() => setProductToDeleteConfirm(product.id)}
                           disabled={productToDelete === product.id}
                           className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold text-sm disabled:opacity-50"
                         >
@@ -957,6 +1254,32 @@ export default function AdminDashboardContent() {
                   </div>
                 ))}
               </div>
+
+              {/* Delete Confirmation Modal */}
+              {productToDeleteConfirm && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">Delete Product?</h3>
+                    <p className="text-gray-600 mb-6">
+                      Are you sure you want to delete this product? This action cannot be undone.
+                    </p>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => handleDeleteProduct(productToDeleteConfirm)}
+                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold"
+                      >
+                        Delete
+                      </button>
+                      <button
+                        onClick={() => setProductToDeleteConfirm(null)}
+                        className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-semibold"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -985,21 +1308,41 @@ export default function AdminDashboardContent() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Order ID</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Customer</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Email</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Shipping Address</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Amount</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Payment</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Date</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Actions</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                        Order ID
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                        Customer
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                        Email
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                        Shipping Address
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                        Amount
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                        Payment
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                        Status
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                        Date
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredOrders.map((order) => (
                       <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-900">{order.order_number}</td>
+                        <td className="py-3 px-4 text-sm font-medium text-gray-900">
+                          {order.order_number}
+                        </td>
                         <td className="py-3 px-4 text-sm text-gray-700">{order.customer_name}</td>
                         <td className="py-3 px-4 text-sm text-gray-700">{order.customer_email}</td>
                         <td className="py-3 px-4 text-sm text-gray-600 max-w-xs">
@@ -1007,26 +1350,40 @@ export default function AdminDashboardContent() {
                             {order.shipping_address || 'N/A'}
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-sm font-semibold text-gray-900">₹{order.final_amount}</td>
+                        <td className="py-3 px-4 text-sm font-semibold text-gray-900">
+                          ₹{order.final_amount}
+                        </td>
                         <td className="py-3 px-4">
                           <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded">
                             {order.payment_method.toUpperCase()}
                           </span>
                         </td>
                         <td className="py-3 px-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${order.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                            order.status === 'shipped' ? 'bg-blue-100 text-blue-700' :
-                              order.status === 'processing' ? 'bg-yellow-100 text-yellow-700' :
-                                order.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
-                            }`}>
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              order.status === 'delivered'
+                                ? 'bg-green-100 text-green-700'
+                                : order.status === 'shipped'
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : order.status === 'processing'
+                                    ? 'bg-yellow-100 text-yellow-700'
+                                    : order.status === 'cancelled'
+                                      ? 'bg-red-100 text-red-700'
+                                      : 'bg-gray-100 text-gray-700'
+                            }`}
+                          >
                             {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-sm text-gray-700">{new Date(order.created_at).toLocaleDateString()}</td>
+                        <td className="py-3 px-4 text-sm text-gray-700">
+                          {new Date(order.created_at).toLocaleDateString()}
+                        </td>
                         <td className="py-3 px-4">
                           <select
                             value={order.status}
-                            onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value as Order['status'])}
+                            onChange={(e) =>
+                              handleUpdateOrderStatus(order.id, e.target.value as Order['status'])
+                            }
                             disabled={updatingOrderId === order.id}
                             className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-primary disabled:opacity-50"
                           >
@@ -1059,15 +1416,21 @@ export default function AdminDashboardContent() {
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setAnalyticsTimeRange('daily')}
-                    className={`px-4 py-2 rounded-lg font-semibold ${analyticsTimeRange === 'daily' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700'
-                      }`}
+                    className={`px-4 py-2 rounded-lg font-semibold ${
+                      analyticsTimeRange === 'daily'
+                        ? 'bg-primary text-white'
+                        : 'bg-gray-200 text-gray-700'
+                    }`}
                   >
                     Daily
                   </button>
                   <button
                     onClick={() => setAnalyticsTimeRange('monthly')}
-                    className={`px-4 py-2 rounded-lg font-semibold ${analyticsTimeRange === 'monthly' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700'
-                      }`}
+                    className={`px-4 py-2 rounded-lg font-semibold ${
+                      analyticsTimeRange === 'monthly'
+                        ? 'bg-primary text-white'
+                        : 'bg-gray-200 text-gray-700'
+                    }`}
                   >
                     Monthly
                   </button>
@@ -1082,15 +1445,38 @@ export default function AdminDashboardContent() {
                     {analyticsTimeRange === 'daily' ? 'Daily' : 'Monthly'} Revenue & Orders
                   </h3>
                   <ResponsiveContainer width="100%" height={350}>
-                    <LineChart data={analyticsTimeRange === 'daily' ? analyticsData.dailyStats : analyticsData.monthlyStats}>
+                    <LineChart
+                      data={
+                        analyticsTimeRange === 'daily'
+                          ? analyticsData.dailyStats
+                          : analyticsData.monthlyStats
+                      }
+                    >
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey={analyticsTimeRange === 'daily' ? 'date' : 'month'} tick={{ fontSize: 12 }} />
+                      <XAxis
+                        dataKey={analyticsTimeRange === 'daily' ? 'date' : 'month'}
+                        tick={{ fontSize: 12 }}
+                      />
                       <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
                       <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
                       <Tooltip />
                       <Legend />
-                      <Line yAxisId="left" type="monotone" dataKey="revenue" stroke={CHART_COLORS[0]} strokeWidth={2} name="Revenue (₹)" />
-                      <Line yAxisId="right" type="monotone" dataKey="orders" stroke={CHART_COLORS[1]} strokeWidth={2} name="Orders" />
+                      <Line
+                        yAxisId="left"
+                        type="monotone"
+                        dataKey="revenue"
+                        stroke={CHART_COLORS[0]}
+                        strokeWidth={2}
+                        name="Revenue (₹)"
+                      />
+                      <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="orders"
+                        stroke={CHART_COLORS[1]}
+                        strokeWidth={2}
+                        name="Orders"
+                      />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -1101,9 +1487,18 @@ export default function AdminDashboardContent() {
                     {analyticsTimeRange === 'daily' ? 'Daily' : 'Monthly'} Cancellations
                   </h3>
                   <ResponsiveContainer width="100%" height={350}>
-                    <BarChart data={analyticsTimeRange === 'daily' ? analyticsData.dailyStats : analyticsData.monthlyStats}>
+                    <BarChart
+                      data={
+                        analyticsTimeRange === 'daily'
+                          ? analyticsData.dailyStats
+                          : analyticsData.monthlyStats
+                      }
+                    >
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey={analyticsTimeRange === 'daily' ? 'date' : 'month'} tick={{ fontSize: 12 }} />
+                      <XAxis
+                        dataKey={analyticsTimeRange === 'daily' ? 'date' : 'month'}
+                        tick={{ fontSize: 12 }}
+                      />
                       <YAxis tick={{ fontSize: 12 }} />
                       <Tooltip />
                       <Legend />
@@ -1114,7 +1509,9 @@ export default function AdminDashboardContent() {
 
                 {/* Order Status Distribution */}
                 <div className="bg-white rounded-xl shadow-md p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Order Status Distribution</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">
+                    Order Status Distribution
+                  </h3>
                   <ResponsiveContainer width="100%" height={350}>
                     <PieChart>
                       <Pie
@@ -1127,7 +1524,10 @@ export default function AdminDashboardContent() {
                         label={(entry) => `${entry.status}: ${entry.count}`}
                       >
                         {analyticsData.statusBreakdown.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={CHART_COLORS[index % CHART_COLORS.length]}
+                          />
                         ))}
                       </Pie>
                       <Tooltip />
@@ -1143,19 +1543,33 @@ export default function AdminDashboardContent() {
                     <table className="w-full">
                       <thead className="sticky top-0 bg-white">
                         <tr className="border-b border-gray-200">
-                          <th className="text-left py-2 px-2 text-xs font-semibold text-gray-700">Rank</th>
-                          <th className="text-left py-2 px-2 text-xs font-semibold text-gray-700">Product</th>
-                          <th className="text-right py-2 px-2 text-xs font-semibold text-gray-700">Sold</th>
-                          <th className="text-right py-2 px-2 text-xs font-semibold text-gray-700">Revenue</th>
+                          <th className="text-left py-2 px-2 text-xs font-semibold text-gray-700">
+                            Rank
+                          </th>
+                          <th className="text-left py-2 px-2 text-xs font-semibold text-gray-700">
+                            Product
+                          </th>
+                          <th className="text-right py-2 px-2 text-xs font-semibold text-gray-700">
+                            Sold
+                          </th>
+                          <th className="text-right py-2 px-2 text-xs font-semibold text-gray-700">
+                            Revenue
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         {analyticsData.topProducts.map((product, index) => (
                           <tr key={product.id} className="border-b border-gray-100">
-                            <td className="py-2 px-2 text-sm font-bold text-gray-400">#{index + 1}</td>
+                            <td className="py-2 px-2 text-sm font-bold text-gray-400">
+                              #{index + 1}
+                            </td>
                             <td className="py-2 px-2 text-sm text-gray-900">{product.name}</td>
-                            <td className="py-2 px-2 text-sm text-right text-gray-700">{product.totalSold}</td>
-                            <td className="py-2 px-2 text-sm text-right font-semibold text-green-600">₹{product.revenue.toFixed(2)}</td>
+                            <td className="py-2 px-2 text-sm text-right text-gray-700">
+                              {product.totalSold}
+                            </td>
+                            <td className="py-2 px-2 text-sm text-right font-semibold text-green-600">
+                              ₹{product.revenue.toFixed(2)}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -1189,8 +1603,17 @@ export default function AdminDashboardContent() {
                 </div>
                 <div className="mt-4 p-4 bg-white rounded-lg">
                   <p className="text-sm text-gray-700">
-                    <strong>Note:</strong> Google Analytics 4 is integrated and tracking all user interactions.
-                    Visit your <a href="https://analytics.google.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Analytics Dashboard</a> to view detailed reports, user behavior, conversion rates, and real-time data.
+                    <strong>Note:</strong> Google Analytics 4 is integrated and tracking all user
+                    interactions. Visit your{' '}
+                    <a
+                      href="https://analytics.google.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      Google Analytics Dashboard
+                    </a>{' '}
+                    to view detailed reports, user behavior, conversion rates, and real-time data.
                   </p>
                 </div>
               </div>
@@ -1204,7 +1627,8 @@ export default function AdminDashboardContent() {
                 <h2 className="text-xl font-bold text-gray-900">Review Moderation</h2>
                 <div className="flex items-center space-x-4">
                   <span className="text-sm text-gray-600">
-                    Pending: <span className="font-bold text-orange-600">{pendingReviewsCount}</span>
+                    Pending:{' '}
+                    <span className="font-bold text-orange-600">{pendingReviewsCount}</span>
                   </span>
                   <span className="text-sm text-gray-600">
                     Total: <span className="font-bold">{reviews.length}</span>
@@ -1214,13 +1638,20 @@ export default function AdminDashboardContent() {
 
               {reviews.length === 0 ? (
                 <div className="text-center py-12">
-                  <Icon name="ChatBubbleLeftRightIcon" size={48} className="text-gray-400 mx-auto mb-4" />
+                  <Icon
+                    name="ChatBubbleLeftRightIcon"
+                    size={48}
+                    className="text-gray-400 mx-auto mb-4"
+                  />
                   <p className="text-gray-600">No reviews to moderate</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {reviews.map((review: any) => (
-                    <div key={review.id} className="border border-gray-200 rounded-lg p-6 hover:border-primary transition-colors">
+                    <div
+                      key={review.id}
+                      className="border border-gray-200 rounded-lg p-6 hover:border-primary transition-colors"
+                    >
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
                           <div className="flex items-center space-x-3 mb-2">
@@ -1231,14 +1662,18 @@ export default function AdminDashboardContent() {
                                   name="StarIcon"
                                   size={16}
                                   variant={star <= review.rating ? 'solid' : 'outline'}
-                                  className={star <= review.rating ? 'text-accent' : 'text-gray-300'}
+                                  className={
+                                    star <= review.rating ? 'text-accent' : 'text-gray-300'
+                                  }
                                 />
                               ))}
                             </div>
                             <span className="font-semibold text-gray-900">{review.title}</span>
                           </div>
                           <p className="text-sm text-gray-600 mb-2">
-                            By: <span className="font-medium">{review.user_profiles?.full_name}</span> ({review.user_profiles?.email})
+                            By:{' '}
+                            <span className="font-medium">{review.user_profiles?.full_name}</span> (
+                            {review.user_profiles?.email})
                           </p>
                           <p className="text-sm text-gray-600 mb-2">
                             Product: <span className="font-medium">{review.products?.name}</span>
@@ -1252,9 +1687,15 @@ export default function AdminDashboardContent() {
                           <p className="text-gray-700 mt-3">{review.content}</p>
                         </div>
                         <div className="ml-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${review.status === 'approved' ? 'bg-green-100 text-green-700' :
-                            review.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
-                            }`}>
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              review.status === 'approved'
+                                ? 'bg-green-100 text-green-700'
+                                : review.status === 'rejected'
+                                  ? 'bg-red-100 text-red-700'
+                                  : 'bg-yellow-100 text-yellow-700'
+                            }`}
+                          >
                             {review.status.charAt(0).toUpperCase() + review.status.slice(1)}
                           </span>
                         </div>
@@ -1275,10 +1716,7 @@ export default function AdminDashboardContent() {
                               {moderatingReviewId === review.id ? 'Processing...' : 'Approve'}
                             </button>
                             <button
-                              onClick={() => {
-                                const reason = prompt('Reason for rejection (optional):');
-                                handleModerateReview(review.id, 'rejected', reason || undefined);
-                              }}
+                              onClick={() => handleModerateReview(review.id, 'rejected')}
                               disabled={moderatingReviewId === review.id}
                               className="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
                             >
@@ -1295,14 +1733,20 @@ export default function AdminDashboardContent() {
           )}
 
           {/* Other Sections */}
-          {activeSection !== 'overview' && activeSection !== 'orders' && activeSection !== 'reviews' && activeSection !== 'products' && activeSection !== 'analytics' && (
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                {menuItems.find(item => item.id === activeSection)?.label}
-              </h2>
-              <p className="text-gray-600">This section is under development. Data will be displayed here.</p>
-            </div>
-          )}
+          {activeSection !== 'overview' &&
+            activeSection !== 'orders' &&
+            activeSection !== 'reviews' &&
+            activeSection !== 'products' &&
+            activeSection !== 'analytics' && (
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">
+                  {menuItems.find((item) => item.id === activeSection)?.label}
+                </h2>
+                <p className="text-gray-600">
+                  This section is under development. Data will be displayed here.
+                </p>
+              </div>
+            )}
 
           {/* Customers Section */}
           {activeSection === 'customers' && (
@@ -1372,11 +1816,13 @@ export default function AdminDashboardContent() {
                     <div>
                       <p className="text-sm text-gray-600 mb-1">Avg Order Value</p>
                       <p className="text-2xl font-bold text-gray-900">
-                        ₹{customers.length > 0
-                          ? (customers.reduce((sum, c) => sum + Number(c.total_spent), 0) /
-                            customers.reduce((sum, c) => sum + c.total_orders, 0) || 1).toFixed(2)
-                          : '0.00'
-                        }
+                        ₹
+                        {customers.length > 0
+                          ? (
+                              customers.reduce((sum, c) => sum + Number(c.total_spent), 0) /
+                                customers.reduce((sum, c) => sum + c.total_orders, 0) || 1
+                            ).toFixed(2)
+                          : '0.00'}
                       </p>
                     </div>
                     <div className="p-3 bg-orange-100 rounded-lg">
@@ -1392,30 +1838,51 @@ export default function AdminDashboardContent() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-gray-200 bg-gray-50">
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Name</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Email</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Phone</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Total Orders</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Total Spent</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Joined</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                          Name
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                          Email
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                          Phone
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                          Total Orders
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                          Total Spent
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                          Joined
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredCustomers.length === 0 ? (
                         <tr>
                           <td colSpan={6} className="py-8 text-center text-gray-500">
-                            {customerSearchQuery ? 'No customers found matching your search.' : 'No customers yet.'}
+                            {customerSearchQuery
+                              ? 'No customers found matching your search.'
+                              : 'No customers yet.'}
                           </td>
                         </tr>
                       ) : (
                         filteredCustomers.map((customer) => (
-                          <tr key={customer.id} className="border-b border-gray-100 hover:bg-gray-50">
+                          <tr
+                            key={customer.id}
+                            className="border-b border-gray-100 hover:bg-gray-50"
+                          >
                             <td className="py-3 px-4 text-sm font-medium text-gray-900">
                               {customer.full_name || 'N/A'}
                             </td>
                             <td className="py-3 px-4 text-sm text-gray-700">{customer.email}</td>
-                            <td className="py-3 px-4 text-sm text-gray-700">{customer.phone || 'N/A'}</td>
-                            <td className="py-3 px-4 text-sm text-gray-900">{customer.total_orders}</td>
+                            <td className="py-3 px-4 text-sm text-gray-700">
+                              {customer.phone || 'N/A'}
+                            </td>
+                            <td className="py-3 px-4 text-sm text-gray-900">
+                              {customer.total_orders}
+                            </td>
                             <td className="py-3 px-4 text-sm font-semibold text-gray-900">
                               ₹{Number(customer.total_spent).toFixed(2)}
                             </td>

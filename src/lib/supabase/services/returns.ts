@@ -5,7 +5,9 @@ export const returnService = {
   // Get all returns (admin) or user's returns
   async getAll(userId?: string) {
     let query = supabaseClient
-      .from('returns').select('*').order('created_at', { ascending: false });
+      .from('returns')
+      .select('*')
+      .order('created_at', { ascending: false });
 
     if (userId) {
       query = query.eq('user_id', userId);
@@ -20,13 +22,17 @@ export const returnService = {
   // Get return by ID with items
   async getById(id: string) {
     const { data: returnData, error: returnError } = await supabaseClient
-      .from('returns').select('*').eq('id', id)
+      .from('returns')
+      .select('*')
+      .eq('id', id)
       .single();
 
     if (returnError) throw returnError;
 
     const { data: items, error: itemsError } = await supabaseClient
-      .from('return_items').select('*').eq('return_id', id);
+      .from('return_items')
+      .select('*')
+      .eq('return_id', id);
 
     if (itemsError) throw itemsError;
 
@@ -64,12 +70,7 @@ export const returnService = {
   },
 
   // Update return status (admin only)
-  async updateStatus(
-    id: string,
-    status: Return['status'],
-    adminId: string,
-    adminNotes?: string
-  ) {
+  async updateStatus(id: string, status: Return['status'], adminId: string, adminNotes?: string) {
     const updateData: any = {
       status,
       updated_at: new Date().toISOString(),

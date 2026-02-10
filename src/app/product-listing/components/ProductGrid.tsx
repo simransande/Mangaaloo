@@ -45,17 +45,17 @@ export default function ProductGrid({ filters }: ProductGridProps) {
       const wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
       setWishlistItems(wishlist.map((item: any) => item.id));
     };
-    
+
     loadWishlist();
-    
+
     const handleWishlistUpdate = () => {
       loadWishlist();
     };
-    
+
     // Listen for both custom event and storage changes
     window.addEventListener('wishlistUpdated', handleWishlistUpdate);
     window.addEventListener('storage', handleWishlistUpdate);
-    
+
     return () => {
       window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
       window.removeEventListener('storage', handleWishlistUpdate);
@@ -66,7 +66,7 @@ export default function ProductGrid({ filters }: ProductGridProps) {
   const filteredProducts = allProducts.filter((product) => {
     // Category filter
     if (filters.categories.length > 0) {
-      const categoryMatch = filters.categories.some(cat => {
+      const categoryMatch = filters.categories.some((cat) => {
         return product.category_id;
       });
       if (!categoryMatch) return false;
@@ -74,17 +74,17 @@ export default function ProductGrid({ filters }: ProductGridProps) {
 
     // Color filter
     if (filters.colors.length > 0) {
-      const colorMatch = filters.colors.some(filterColor =>
-        product.colors?.some(productColor => productColor.toLowerCase() === filterColor.toLowerCase())
+      const colorMatch = filters.colors.some((filterColor) =>
+        product.colors?.some(
+          (productColor) => productColor.toLowerCase() === filterColor.toLowerCase()
+        )
       );
       if (!colorMatch) return false;
     }
 
     // Size filter
     if (filters.sizes.length > 0) {
-      const sizeMatch = filters.sizes.some(filterSize =>
-        product.sizes?.includes(filterSize)
-      );
+      const sizeMatch = filters.sizes.some((filterSize) => product.sizes?.includes(filterSize));
       if (!sizeMatch) return false;
     }
 
@@ -133,7 +133,9 @@ export default function ProductGrid({ filters }: ProductGridProps) {
         <div>
           <h2 className="text-2xl font-bold text-gray-900">All Products</h2>
           <p className="text-gray-600 mt-1">
-            {loading ? 'Loading...' : `Showing ${startIndex + 1}-${Math.min(endIndex, sortedProducts.length)} of ${sortedProducts.length} products`}
+            {loading
+              ? 'Loading...'
+              : `Showing ${startIndex + 1}-${Math.min(endIndex, sortedProducts.length)} of ${sortedProducts.length} products`}
           </p>
         </div>
 
@@ -142,7 +144,9 @@ export default function ProductGrid({ filters }: ProductGridProps) {
           <button
             onClick={() => setViewMode('grid')}
             className={`p-2 rounded-lg transition-colors ${
-              viewMode === 'grid' ? 'bg-white text-primary shadow-sm' : 'text-gray-600 hover:text-gray-900'
+              viewMode === 'grid'
+                ? 'bg-white text-primary shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
             }`}
           >
             <Icon name="Squares2X2Icon" size={20} />
@@ -150,7 +154,9 @@ export default function ProductGrid({ filters }: ProductGridProps) {
           <button
             onClick={() => setViewMode('list')}
             className={`p-2 rounded-lg transition-colors ${
-              viewMode === 'list' ? 'bg-white text-primary shadow-sm' : 'text-gray-600 hover:text-gray-900'
+              viewMode === 'list'
+                ? 'bg-white text-primary shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
             }`}
           >
             <Icon name="ListBulletIcon" size={20} />
@@ -169,8 +175,8 @@ export default function ProductGrid({ filters }: ProductGridProps) {
       {error && (
         <div className="text-center py-10">
           <p className="text-red-600 mb-4">{error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
           >
             Retry
@@ -231,12 +237,18 @@ export default function ProductGrid({ filters }: ProductGridProps) {
                     {/* Stock Status */}
                     <div
                       className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-semibold ${
-                        product.stock_status === 'in-stock' ? 'bg-green-500 text-white'
-                          : product.stock_status === 'low-stock' ? 'bg-yellow-500 text-white' : 'bg-red-500 text-white'
+                        product.stock_status === 'in-stock'
+                          ? 'bg-green-500 text-white'
+                          : product.stock_status === 'low-stock'
+                            ? 'bg-yellow-500 text-white'
+                            : 'bg-red-500 text-white'
                       }`}
                     >
-                      {product.stock_status === 'in-stock' ? 'In Stock'
-                        : product.stock_status === 'low-stock' ? 'Low Stock' : 'Out of Stock'}
+                      {product.stock_status === 'in-stock'
+                        ? 'In Stock'
+                        : product.stock_status === 'low-stock'
+                          ? 'Low Stock'
+                          : 'Out of Stock'}
                     </div>
 
                     {/* Quick Actions */}
@@ -253,9 +265,9 @@ export default function ProductGrid({ filters }: ProductGridProps) {
                             : 'bg-white hover:bg-primary hover:text-white'
                         }`}
                       >
-                        <Icon 
-                          name="HeartIcon" 
-                          size={18} 
+                        <Icon
+                          name="HeartIcon"
+                          size={18}
                           className={wishlistItems.includes(product.id) ? 'fill-current' : ''}
                         />
                       </button>
@@ -270,16 +282,24 @@ export default function ProductGrid({ filters }: ProductGridProps) {
 
                     {/* Description - only in list view */}
                     {viewMode === 'list' && product.description && (
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{product.description}</p>
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                        {product.description}
+                      </p>
                     )}
 
                     {/* Price */}
                     <div className="flex items-center gap-2 mb-3">
                       {product.discounted_price ? (
                         <>
-                          <span className="text-xl font-bold text-primary">₹{product.discounted_price}</span>
-                          <span className="text-sm text-gray-400 line-through">₹{product.price}</span>
-                          <span className="text-xs text-green-600 font-semibold">{discountPercent}% OFF</span>
+                          <span className="text-xl font-bold text-primary">
+                            ₹{product.discounted_price}
+                          </span>
+                          <span className="text-sm text-gray-400 line-through">
+                            ₹{product.price}
+                          </span>
+                          <span className="text-xs text-green-600 font-semibold">
+                            {discountPercent}% OFF
+                          </span>
                         </>
                       ) : (
                         <span className="text-xl font-bold text-gray-900">₹{product.price}</span>
@@ -302,7 +322,9 @@ export default function ProductGrid({ filters }: ProductGridProps) {
                               />
                             ))}
                             {product.colors.length > 3 && (
-                              <span className="text-xs text-gray-500">+{product.colors.length - 3}</span>
+                              <span className="text-xs text-gray-500">
+                                +{product.colors.length - 3}
+                              </span>
                             )}
                           </div>
                         </div>
@@ -324,7 +346,8 @@ export default function ProductGrid({ filters }: ProductGridProps) {
                     <div className="text-sm text-gray-600">
                       {product.stock_quantity > 0 ? (
                         <span>
-                          {product.stock_quantity} {product.stock_quantity === 1 ? 'item' : 'items'} available
+                          {product.stock_quantity} {product.stock_quantity === 1 ? 'item' : 'items'}{' '}
+                          available
                         </span>
                       ) : (
                         <span className="text-red-600 font-semibold">Out of stock</span>
@@ -353,7 +376,8 @@ export default function ProductGrid({ filters }: ProductGridProps) {
                   onClick={() => handlePageChange(page)}
                   className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
                     currentPage === page
-                      ? 'bg-primary text-white' : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
+                      ? 'bg-primary text-white'
+                      : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
                   }`}
                 >
                   {page}

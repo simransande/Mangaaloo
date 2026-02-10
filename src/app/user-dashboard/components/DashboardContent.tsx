@@ -23,7 +23,10 @@ export default function DashboardContent() {
         setLoading(true);
 
         // First check if we have a session
-        const { data: { session }, error: sessionError } = await authService.getCurrentSession();
+        const {
+          data: { session },
+          error: sessionError,
+        } = await authService.getCurrentSession();
 
         if (sessionError || !session) {
           console.log('No active session, redirecting to login');
@@ -53,35 +56,34 @@ export default function DashboardContent() {
               value: order.total_amount,
               tax: 0,
               shipping: order.shipping_cost || 0,
-              items: [{
-                id: order.id,
-                name: 'Order Items',
-                price: order.total_amount,
-                quantity: 1,
-              }],
+              items: [
+                {
+                  id: order.id,
+                  name: 'Order Items',
+                  price: order.total_amount,
+                  quantity: 1,
+                },
+              ],
             });
             sessionStorage.setItem(`tracked_${order.id}`, 'true');
           }
         });
 
         // Subscribe to real-time order updates
-        const channel = orderService.subscribeToOrderUpdates(
-          (updatedOrder) => {
-            setRecentOrders((prevOrders) => {
-              const orderIndex = prevOrders.findIndex((o) => o.id === updatedOrder.id);
-              if (orderIndex !== -1) {
-                // Update existing order
-                const newOrders = [...prevOrders];
-                newOrders[orderIndex] = updatedOrder;
-                return newOrders;
-              } else {
-                // Add new order
-                return [updatedOrder, ...prevOrders].slice(0, 3);
-              }
-            });
-          },
-          user.id
-        );
+        const channel = orderService.subscribeToOrderUpdates((updatedOrder) => {
+          setRecentOrders((prevOrders) => {
+            const orderIndex = prevOrders.findIndex((o) => o.id === updatedOrder.id);
+            if (orderIndex !== -1) {
+              // Update existing order
+              const newOrders = [...prevOrders];
+              newOrders[orderIndex] = updatedOrder;
+              return newOrders;
+            } else {
+              // Add new order
+              return [updatedOrder, ...prevOrders].slice(0, 3);
+            }
+          });
+        }, user.id);
 
         // Cleanup subscription on unmount
         return () => {
@@ -147,7 +149,9 @@ export default function DashboardContent() {
         <div className="bg-gradient-to-r from-primary to-purple-600 rounded-2xl p-8 mb-8 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Welcome back, {userProfile?.full_name || 'User'}!</h1>
+              <h1 className="text-3xl font-bold mb-2">
+                Welcome back, {userProfile?.full_name || 'User'}!
+              </h1>
               <p className="text-white/80">{userProfile?.email}</p>
             </div>
             <button
@@ -167,9 +171,11 @@ export default function DashboardContent() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap ${activeTab === tab.id
-                    ? 'text-primary border-b-2 border-primary' : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                className={`flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? 'text-primary border-b-2 border-primary'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
               >
                 <Icon name={tab.icon} size={20} />
                 {tab.label}
@@ -235,15 +241,28 @@ export default function DashboardContent() {
                 ) : (
                   <div className="space-y-4">
                     {recentOrders.map((order) => (
-                      <div key={order.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-primary transition-colors">
+                      <div
+                        key={order.id}
+                        className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-primary transition-colors"
+                      >
                         <div className="flex-1">
                           <div className="flex items-center gap-4 mb-2">
-                            <span className="font-semibold text-gray-900">{order.order_number}</span>
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${order.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                                order.status === 'shipped' ? 'bg-blue-100 text-blue-700' :
-                                  order.status === 'processing' ? 'bg-yellow-100 text-yellow-700' :
-                                    order.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
-                              }`}>
+                            <span className="font-semibold text-gray-900">
+                              {order.order_number}
+                            </span>
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                order.status === 'delivered'
+                                  ? 'bg-green-100 text-green-700'
+                                  : order.status === 'shipped'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : order.status === 'processing'
+                                      ? 'bg-yellow-100 text-yellow-700'
+                                      : order.status === 'cancelled'
+                                        ? 'bg-red-100 text-red-700'
+                                        : 'bg-gray-100 text-gray-700'
+                              }`}
+                            >
                               {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                             </span>
                             <span className="text-xs text-gray-500">
@@ -251,7 +270,8 @@ export default function DashboardContent() {
                             </span>
                           </div>
                           <p className="text-sm text-gray-600">
-                            {new Date(order.created_at).toLocaleDateString()} • {order.items_count} items
+                            {new Date(order.created_at).toLocaleDateString()} • {order.items_count}{' '}
+                            items
                           </p>
                         </div>
                         <div className="text-right">

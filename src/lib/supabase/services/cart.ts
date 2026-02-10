@@ -5,7 +5,11 @@ export const cartService = {
   // Get user's cart items
   async getCartItems(userId: string) {
     const { data, error } = await supabaseClient
-      .from('cart_items').select(`id,product_id,quantity,color,size,created_at,updated_at,products:product_id (id,name,price,discounted_price,image_url,image_alt,stock_quantity,stock_status)`).eq('user_id', userId);
+      .from('cart_items')
+      .select(
+        `id,product_id,quantity,color,size,created_at,updated_at,products:product_id (id,name,price,discounted_price,image_url,image_alt,stock_quantity,stock_status)`
+      )
+      .eq('user_id', userId);
 
     if (error) throw error;
 
@@ -26,18 +30,27 @@ export const cartService = {
   },
 
   // Add item to cart
-  async addItem(userId: string, productId: string, quantity: number, color?: string, size?: string) {
+  async addItem(
+    userId: string,
+    productId: string,
+    quantity: number,
+    color?: string,
+    size?: string
+  ) {
     const { data, error } = await supabaseClient
       .from('cart_items')
-      .upsert({
-        user_id: userId,
-        product_id: productId,
-        quantity,
-        color,
-        size,
-      }, {
-        onConflict: 'user_id,product_id,color,size',
-      })
+      .upsert(
+        {
+          user_id: userId,
+          product_id: productId,
+          quantity,
+          color,
+          size,
+        },
+        {
+          onConflict: 'user_id,product_id,color,size',
+        }
+      )
       .select()
       .single();
 
@@ -60,18 +73,14 @@ export const cartService = {
 
   // Remove item from cart
   async removeItem(id: string) {
-    const { error } = await supabaseClient
-      .from('cart_items').delete().eq('id', id);
+    const { error } = await supabaseClient.from('cart_items').delete().eq('id', id);
 
     if (error) throw error;
   },
 
   // Clear user's cart
   async clearCart(userId: string) {
-    const { error } = await supabaseClient
-      .from('cart_items')
-      .delete()
-      .eq('user_id', userId);
+    const { error } = await supabaseClient.from('cart_items').delete().eq('user_id', userId);
 
     if (error) throw error;
   },

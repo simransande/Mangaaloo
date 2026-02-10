@@ -128,7 +128,7 @@ export default function AdminReturnsContent() {
   const handleUpdateStatus = async (returnId: string, newStatus: Return['status']) => {
     try {
       setUpdatingReturnId(returnId);
-      let user = await authService.getCurrentUser();
+      const user = await authService.getCurrentUser();
       if (!user) return;
 
       await returnService.updateStatus(returnId, newStatus, user.id);
@@ -149,7 +149,7 @@ export default function AdminReturnsContent() {
 
     try {
       setUpdatingReturnId(returnId);
-      let user = await authService.getCurrentUser();
+      const user = await authService.getCurrentUser();
       if (!user) return;
 
       await returnService.processRefund(returnId, user.id, 'Refund processed successfully');
@@ -298,7 +298,9 @@ export default function AdminReturnsContent() {
               <Icon name="BanknotesIcon" size={24} className="text-primary" />
               <div>
                 <p className="text-sm text-gray-600">Total Refunds</p>
-                <p className="text-2xl font-bold text-primary">₹{stats.totalRefundAmount.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-primary">
+                  ₹{stats.totalRefundAmount.toFixed(2)}
+                </p>
               </div>
             </div>
           </div>
@@ -308,7 +310,9 @@ export default function AdminReturnsContent() {
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Filter by Status
+              </label>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
@@ -375,14 +379,18 @@ export default function AdminReturnsContent() {
                   filteredReturns.map((returnItem) => (
                     <tr key={returnItem.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{returnItem.return_number}</div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {returnItem.return_number}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-900">{returnItem.customer_name}</div>
                         <div className="text-sm text-gray-500">{returnItem.customer_email}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">{getReasonLabel(returnItem.reason)}</div>
+                        <div className="text-sm text-gray-900">
+                          {getReasonLabel(returnItem.reason)}
+                        </div>
                         {returnItem.reason_details && (
                           <div className="text-xs text-gray-500 mt-1 max-w-xs truncate">
                             {returnItem.reason_details}
@@ -390,7 +398,9 @@ export default function AdminReturnsContent() {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">₹{returnItem.refund_amount.toFixed(2)}</div>
+                        <div className="text-sm font-medium text-gray-900">
+                          ₹{returnItem.refund_amount.toFixed(2)}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
@@ -416,7 +426,10 @@ export default function AdminReturnsContent() {
                               <select
                                 value={returnItem.status}
                                 onChange={(e) =>
-                                  handleUpdateStatus(returnItem.id, e.target.value as Return['status'])
+                                  handleUpdateStatus(
+                                    returnItem.id,
+                                    e.target.value as Return['status']
+                                  )
                                 }
                                 disabled={updatingReturnId === returnItem.id}
                                 className="text-sm px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50"
@@ -433,14 +446,16 @@ export default function AdminReturnsContent() {
                               disabled={updatingReturnId === returnItem.id}
                               className="px-3 py-1 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
                             >
-                              {updatingReturnId === returnItem.id ? 'Processing...' : 'Process Refund'}
+                              {updatingReturnId === returnItem.id
+                                ? 'Processing...'
+                                : 'Process Refund'}
                             </button>
                           )}
                           {(returnItem.status === 'refunded' ||
                             returnItem.status === 'rejected' ||
                             returnItem.status === 'cancelled') && (
-                              <span className="text-sm text-gray-500">No actions</span>
-                            )}
+                            <span className="text-sm text-gray-500">No actions</span>
+                          )}
                         </div>
                       </td>
                     </tr>

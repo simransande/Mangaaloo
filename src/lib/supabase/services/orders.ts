@@ -5,8 +5,7 @@ import { ecommerceTracking } from '@/lib/analytics';
 export const orderService = {
   // Get all orders (admin) or user's orders
   async getAll(userId?: string) {
-    let query = supabaseClient
-      .from('orders').select('*').order('created_at', { ascending: false });
+    let query = supabaseClient.from('orders').select('*').order('created_at', { ascending: false });
 
     if (userId) {
       query = query.eq('user_id', userId);
@@ -18,24 +17,40 @@ export const orderService = {
     return data as Order[];
   },
 
-  // Get order by ID with items
+  // Get order by ID
   async getById(id: string) {
-    const { data: order, error: orderError } = await supabaseClient
-      .from('orders').select('*').eq('id', id)
-      .single();
+    const { data, error } = await supabaseClient.from('orders').select('*').eq('id', id).single();
 
-    if (orderError) throw orderError;
+    if (error) throw error;
+    return data as Order;
+  },
 
-    const { data: items, error: itemsError } = await supabaseClient
-      .from('order_items').select('*').eq('order_id', id);
+  // Get order items by order ID
+  async getOrderItems(orderId: string) {
+    const { data, error } = await supabaseClient
+      .from('order_items')
+      .select('*')
+      .eq('order_id', orderId);
 
-    if (itemsError) throw itemsError;
-
-    return { order: order as Order, items: items as OrderItem[] };
+    if (error) throw error;
+    return data as OrderItem[];
   },
 
   // Create order
-  async create(orderData: Omit<Order, 'id' | 'created_at' | 'updated_at'>, items: Omit<OrderItem, 'id' | 'order_id' | 'created_at'>[]) {
+  async create(
+    orderData: Omit<Order, 'id' | 'created_at' | 'updated_at'>,
+    items: Omit<OrderItem, 'id' | 'order_id' | 'created_at'>[]
+  ) {
+    // Verify auth status and sync user_id
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
+    if (user && orderData.user_id && orderData.user_id !== user.id) {
+      console.warn('Order user_id mismatch. Overriding to match auth session.');
+      // @ts-ignore
+      orderData.user_id = user.id;
+    }
+
     // Create order
     const { data: order, error: orderError } = await supabaseClient
       .from('orders')
@@ -46,7 +61,7 @@ export const orderService = {
     if (orderError) throw orderError;
 
     // Create order items
-    const orderItems = items.map(item => ({
+    const orderItems = items.map((item) => ({
       ...item,
       order_id: order.id,
     }));

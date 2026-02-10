@@ -3,7 +3,6 @@
 import { Dispatch, SetStateAction } from 'react';
 import { Filters } from './ProductListingContent';
 
-
 interface FilterSidebarProps {
   filters: Filters;
   setFilters: Dispatch<SetStateAction<Filters>>;
@@ -92,9 +91,7 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
 
       {/* Sort By */}
       <div>
-        <h3 className="font-heading font-bold text-sm uppercase mb-3">
-          Sort By
-        </h3>
+        <h3 className="font-heading font-bold text-sm uppercase mb-3">Sort By</h3>
         <select
           value={filters.sortBy}
           onChange={(e) => setFilters({ ...filters, sortBy: e.target.value })}
@@ -110,9 +107,7 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
 
       {/* Categories */}
       <div>
-        <h3 className="font-heading font-bold text-sm uppercase mb-3">
-          Category
-        </h3>
+        <h3 className="font-heading font-bold text-sm uppercase mb-3">Category</h3>
         <div className="space-y-2">
           {categories.map((category) => (
             <label
@@ -128,9 +123,7 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
                 />
                 <span className="text-sm">{category.name}</span>
               </div>
-              <span className="text-xs text-muted-foreground">
-                ({category.count})
-              </span>
+              <span className="text-xs text-muted-foreground">({category.count})</span>
             </label>
           ))}
         </div>
@@ -138,9 +131,7 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
 
       {/* Price Range */}
       <div>
-        <h3 className="font-heading font-bold text-sm uppercase mb-3">
-          Price Range
-        </h3>
+        <h3 className="font-heading font-bold text-sm uppercase mb-3">Price Range</h3>
         <div className="space-y-3">
           <input
             type="range"
@@ -165,9 +156,7 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
 
       {/* Colors */}
       <div>
-        <h3 className="font-heading font-bold text-sm uppercase mb-3">
-          Color
-        </h3>
+        <h3 className="font-heading font-bold text-sm uppercase mb-3">Color</h3>
         <div className="grid grid-cols-6 gap-2">
           {colors.map((color) => (
             <button
@@ -175,7 +164,8 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
               onClick={() => toggleColor(color.hex)}
               className={`w-10 h-10 rounded-full border-2 transition-all ${
                 filters.colors.includes(color.hex)
-                  ? 'border-primary scale-110' :'border-border hover:scale-105'
+                  ? 'border-primary scale-110'
+                  : 'border-border hover:scale-105'
               }`}
               style={{ backgroundColor: color.hex }}
               title={color.name}
@@ -186,9 +176,7 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
 
       {/* Sizes */}
       <div>
-        <h3 className="font-heading font-bold text-sm uppercase mb-3">
-          Size
-        </h3>
+        <h3 className="font-heading font-bold text-sm uppercase mb-3">Size</h3>
         <div className="grid grid-cols-3 gap-2">
           {sizes.map((size) => (
             <button

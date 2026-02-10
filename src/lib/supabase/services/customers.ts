@@ -123,9 +123,7 @@ export const customerService = {
       averageOrderValue: 0,
     };
 
-    stats.averageOrderValue = stats.totalOrders > 0 
-      ? stats.totalRevenue / stats.totalOrders 
-      : 0;
+    stats.averageOrderValue = stats.totalOrders > 0 ? stats.totalRevenue / stats.totalOrders : 0;
 
     return stats;
   },

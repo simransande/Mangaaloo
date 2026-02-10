@@ -25,18 +25,15 @@ export default function OrderSummary({
   handleCheckout,
 }: OrderSummaryProps) {
   // Add null check for cartItems
-  const validCartItems = cartItems?.filter(item => item && item.price != null) || [];
-  
+  const validCartItems = cartItems?.filter((item) => item && item.price != null) || [];
+
   const subtotal = validCartItems.reduce(
-    (sum, item) =>
-      sum + (item.discountedPrice || item.price) * item.quantity,
+    (sum, item) => sum + (item.discountedPrice || item.price) * item.quantity,
     0
   );
 
   const shipping = subtotal >= 999 ? 0 : 50;
-  const couponDiscount = appliedCoupon
-    ? Math.round((subtotal * appliedCoupon.discount) / 100)
-    : 0;
+  const couponDiscount = appliedCoupon ? Math.round((subtotal * appliedCoupon.discount) / 100) : 0;
   const total = subtotal + shipping - couponDiscount;
 
   const freeShippingProgress = Math.min((subtotal / 999) * 100, 100);
@@ -48,9 +45,7 @@ export default function OrderSummary({
         <div>
           <div className="flex justify-between items-center text-sm mb-2">
             <span className="text-muted-foreground">Free shipping progress</span>
-            <span className="font-semibold text-primary">
-              ₹{999 - subtotal} to go
-            </span>
+            <span className="font-semibold text-primary">₹{999 - subtotal} to go</span>
           </div>
           <div className="w-full bg-muted rounded-full h-2">
             <div
@@ -63,9 +58,7 @@ export default function OrderSummary({
 
       {/* Coupon Code */}
       <div>
-        <label className="font-semibold text-sm block mb-2">
-          Coupon Code
-        </label>
+        <label className="font-semibold text-sm block mb-2">Coupon Code</label>
         {appliedCoupon ? (
           <div className="flex items-center justify-between p-3 bg-success/10 border border-success rounded-lg">
             <div className="flex items-center space-x-2">
@@ -74,10 +67,7 @@ export default function OrderSummary({
                 {appliedCoupon.code} applied (-{appliedCoupon.discount}%)
               </span>
             </div>
-            <button
-              onClick={handleRemoveCoupon}
-              className="text-error hover:underline text-sm"
-            >
+            <button onClick={handleRemoveCoupon} className="text-error hover:underline text-sm">
               Remove
             </button>
           </div>
@@ -98,9 +88,7 @@ export default function OrderSummary({
             </button>
           </div>
         )}
-        <p className="text-xs text-muted-foreground mt-2">
-          Try: SAVE20 or FIRST10
-        </p>
+        <p className="text-xs text-muted-foreground mt-2">Try: SAVE20 or FIRST10</p>
       </div>
 
       {/* Divider */}
@@ -116,19 +104,13 @@ export default function OrderSummary({
         {couponDiscount > 0 && (
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Coupon Discount</span>
-            <span className="font-semibold text-success">
-              -₹{couponDiscount}
-            </span>
+            <span className="font-semibold text-success">-₹{couponDiscount}</span>
           </div>
         )}
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Shipping</span>
           <span className="font-semibold">
-            {shipping === 0 ? (
-              <span className="text-success">Free</span>
-            ) : (
-              `₹${shipping}`
-            )}
+            {shipping === 0 ? <span className="text-success">Free</span> : `₹${shipping}`}
           </span>
         </div>
         <div className="border-t border-border pt-3 flex justify-between">

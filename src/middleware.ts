@@ -43,7 +43,7 @@ export async function middleware(request: NextRequest) {
           .from('user_profiles')
           .select('role')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
 
         if (profile?.role === 'admin') {
           const url = request.nextUrl.clone();
@@ -62,15 +62,18 @@ export async function middleware(request: NextRequest) {
     }
 
     // Check if user is admin
-    const { data: profile } = await supabase
+    const { data: profile, error } = await supabase
       .from('user_profiles')
       .select('role')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (profile?.role !== 'admin') {
+    // If profile doesn't exist or role is not admin, deny access
+    if (error || !profile || profile.role !== 'admin') {
+      console.error('Admin access denied:', { userId: user.id, error, profile });
       const url = request.nextUrl.clone();
       url.pathname = '/admin/login';
+      url.searchParams.set('error', 'access_denied');
       return NextResponse.redirect(url);
     }
   }
