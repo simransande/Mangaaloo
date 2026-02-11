@@ -5,11 +5,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 // Declare gtag types
 declare global {
   interface Window {
-    gtag?: (
-      command: string,
-      targetId: string | Date,
-      config?: Record<string, any>
-    ) => void;
+    gtag?: (command: string, targetId: string | Date, config?: Record<string, any>) => void;
     dataLayer?: any[];
   }
 }
@@ -96,12 +92,7 @@ export const ecommerceTracking = {
   },
 
   // Track remove from cart
-  removeFromCart(product: {
-    id: string;
-    name: string;
-    price: number;
-    quantity: number;
-  }) {
+  removeFromCart(product: { id: string; name: string; price: number; quantity: number }) {
     trackEvent('remove_from_cart', {
       currency: 'USD',
       value: product.price * product.quantity,
@@ -117,16 +108,19 @@ export const ecommerceTracking = {
   },
 
   // Track begin checkout
-  beginCheckout(items: Array<{
-    id: string;
-    name: string;
-    price: number;
-    quantity: number;
-  }>, totalValue: number) {
+  beginCheckout(
+    items: Array<{
+      id: string;
+      name: string;
+      price: number;
+      quantity: number;
+    }>,
+    totalValue: number
+  ) {
     trackEvent('begin_checkout', {
       currency: 'USD',
       value: totalValue,
-      items: items.map(item => ({
+      items: items.map((item) => ({
         item_id: item.id,
         item_name: item.name,
         price: item.price,
@@ -154,7 +148,7 @@ export const ecommerceTracking = {
       value: transaction.value,
       tax: transaction.tax || 0,
       shipping: transaction.shipping || 0,
-      items: transaction.items.map(item => ({
+      items: transaction.items.map((item) => ({
         item_id: item.id,
         item_name: item.name,
         price: item.price,
@@ -171,16 +165,19 @@ export const ecommerceTracking = {
   },
 
   // Track view cart
-  viewCart(items: Array<{
-    id: string;
-    name: string;
-    price: number;
-    quantity: number;
-  }>, totalValue: number) {
+  viewCart(
+    items: Array<{
+      id: string;
+      name: string;
+      price: number;
+      quantity: number;
+    }>,
+    totalValue: number
+  ) {
     trackEvent('view_cart', {
       currency: 'USD',
       value: totalValue,
-      items: items.map(item => ({
+      items: items.map((item) => ({
         item_id: item.id,
         item_name: item.name,
         price: item.price,

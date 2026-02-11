@@ -1,18 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Icon from '@/components/ui/AppIcon';
 import { authService } from '@/lib/supabase/services/auth';
 
 export default function AdminLoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const errorParam = searchParams?.get('error');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(
+    errorParam === 'access_denied' ? 'Access denied. Admin privileges required.' : ''
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +25,7 @@ export default function AdminLoginForm() {
 
     try {
       console.log('Attempting admin login with:', email);
-      
+
       // Sign in
       const { user: signInUser, session } = await authService.signIn(email, password);
       console.log('Sign in successful:', { userId: signInUser?.id, hasSession: !!session });
@@ -37,7 +41,7 @@ export default function AdminLoginForm() {
       try {
         const isAdmin = await authService.isAdmin(signInUser.id);
         console.log('Admin check result:', isAdmin);
-        
+
         if (!isAdmin) {
           console.warn('User is not an admin:', signInUser.email);
           await authService.signOut();
@@ -61,9 +65,9 @@ export default function AdminLoginForm() {
       console.error('Error details:', {
         message: err.message,
         status: err.status,
-        name: err.name
+        name: err.name,
       });
-      
+
       if (err.message?.includes('Invalid login credentials')) {
         setError('Invalid email or password. Please check your credentials and try again.');
       } else if (err.message?.includes('Email not confirmed')) {
@@ -95,7 +99,11 @@ export default function AdminLoginForm() {
             {/* Error Message */}
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start">
-                <Icon name="ExclamationCircleIcon" size={20} className="mr-2 mt-0.5 flex-shrink-0" />
+                <Icon
+                  name="ExclamationCircleIcon"
+                  size={20}
+                  className="mr-2 mt-0.5 flex-shrink-0"
+                />
                 <span className="text-sm">{error}</span>
               </div>
             )}

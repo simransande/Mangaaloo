@@ -52,9 +52,7 @@ export default function OffersSection() {
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">
-            Special Offers
-          </h2>
+          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">Special Offers</h2>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
             Exclusive deals and combo offers - Save big on your favorite styles
           </p>
@@ -87,8 +85,9 @@ export default function OffersSection() {
               <Link
                 key={offer.id}
                 href={offer.link || '/product-listing'}
-                className={`group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-                  }`}
+                className={`group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 ${
+                  isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+                }`}
                 style={{
                   transitionDelay: `${index * 50}ms`,
                 }}
@@ -116,13 +115,21 @@ export default function OffersSection() {
                     <h3 className="text-2xl font-bold mb-2 group-hover:text-yellow-300 transition-colors">
                       {offer.title}
                     </h3>
-                    <p className="text-gray-200 text-sm mb-4">
-                      {offer.description}
-                    </p>
+                    <p className="text-gray-200 text-sm mb-4">{offer.description}</p>
                     <div className="inline-flex items-center gap-2 text-yellow-300 font-semibold group-hover:gap-4 transition-all">
                       Shop Now
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17 8l4 4m0 0l-4 4m4-4H3"
+                        />
                       </svg>
                     </div>
                   </div>

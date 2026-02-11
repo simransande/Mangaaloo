@@ -52,16 +52,21 @@ export default function LoginForm() {
         funnelTracking.loginComplete(user.id);
       }
 
-      // Redirect to intended page or homepage
-      if (redirect) {
+      // Get user profile to check role
+      const profile = await authService.getUserProfile(user.id);
+
+      // Redirect based on role
+      if (profile.role === 'admin') {
+        // Use window.location for admin to ensure fresh page load
+        window.location.href = '/admin/dashboard';
+      } else if (redirect) {
         router.push(redirect);
       } else {
-        router.push('/homepage');
+        router.push('/user-dashboard');
       }
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'Invalid email or password');
-    } finally {
       setLoading(false);
     }
   };
@@ -123,7 +128,10 @@ export default function LoginForm() {
 
           <div className="flex items-center justify-between">
             <label className="flex items-center">
-              <input type="checkbox" className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary" />
+              <input
+                type="checkbox"
+                className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+              />
               <span className="ml-2 text-sm text-gray-600">Remember me</span>
             </label>
             <Link href="/forgot-password" className="text-sm text-primary hover:underline">
@@ -142,7 +150,7 @@ export default function LoginForm() {
 
         <div className="mt-6 text-center">
           <p className="text-gray-600">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/register" className="text-primary font-semibold hover:underline">
               Sign up
             </Link>
@@ -154,8 +162,12 @@ export default function LoginForm() {
             <strong>Demo Credentials:</strong>
           </p>
           <div className="space-y-1 text-xs text-gray-600 text-center">
-            <p><strong>Admin:</strong> admin@mangaaloo.com / Admin@123</p>
-            <p><strong>Customer:</strong> customer@example.com / password123</p>
+            <p>
+              <strong>Admin:</strong> admin@mangaaloo.com / Admin@123
+            </p>
+            <p>
+              <strong>Customer:</strong> customer@example.com / password123
+            </p>
           </div>
         </div>
       </div>

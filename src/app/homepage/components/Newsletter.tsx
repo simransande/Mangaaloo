@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Icon from '@/components/ui/AppIcon';
 
 export default function Newsletter() {
-  const [email, setEmail]= useState('');
+  const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -23,15 +23,16 @@ export default function Newsletter() {
           <div className="mb-6">
             <Icon name="EnvelopeIcon" size={48} className="mx-auto text-primary" />
           </div>
-          <h2 className="font-heading font-bold text-3xl md:text-4xl mb-4">
-            Stay Updated
-          </h2>
+          <h2 className="font-heading font-bold text-3xl md:text-4xl mb-4">Stay Updated</h2>
           <p className="text-muted-foreground mb-8">
-            Subscribe to our newsletter for exclusive offers, new arrivals, and
-            fashion tips delivered to your inbox.
+            Subscribe to our newsletter for exclusive offers, new arrivals, and fashion tips
+            delivered to your inbox.
           </p>
 
-          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto"
+          >
             <input
               type="email"
               value={email}

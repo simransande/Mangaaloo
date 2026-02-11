@@ -45,12 +45,8 @@ export default function ProductListingContent() {
         <div className="container mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="font-heading font-bold text-3xl md:text-4xl mb-2">
-                All Products
-              </h1>
-              <p className="text-muted-foreground">
-                Showing 48 products
-              </p>
+              <h1 className="font-heading font-bold text-3xl md:text-4xl mb-2">All Products</h1>
+              <p className="text-muted-foreground">Showing 48 products</p>
             </div>
 
             {/* Mobile Filter Toggle */}

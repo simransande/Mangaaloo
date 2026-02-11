@@ -57,17 +57,17 @@ export default function FeaturedProducts() {
       const wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
       setWishlistItems(wishlist.map((item: any) => item.id));
     };
-    
+
     loadWishlist();
-    
+
     const handleWishlistUpdate = () => {
       loadWishlist();
     };
-    
+
     // Listen for both custom event and storage changes
     window.addEventListener('wishlistUpdated', handleWishlistUpdate);
     window.addEventListener('storage', handleWishlistUpdate);
-    
+
     return () => {
       window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
       window.removeEventListener('storage', handleWishlistUpdate);
@@ -83,7 +83,8 @@ export default function FeaturedProducts() {
             Trending Designs
           </h2>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Discover our latest collection of fancy t-shirts, premium shirts, stylish trousers, and performance gymwear
+            Discover our latest collection of fancy t-shirts, premium shirts, stylish trousers, and
+            performance gymwear
           </p>
         </div>
 
@@ -113,8 +114,9 @@ export default function FeaturedProducts() {
             {products.map((product, index) => (
               <div
                 key={product.id}
-                className={`group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-                  }`}
+                className={`group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 ${
+                  isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+                }`}
                 style={{
                   transitionDelay: `${index * 50}ms`,
                 }}
@@ -136,7 +138,7 @@ export default function FeaturedProducts() {
 
                   {/* Quick Actions */}
                   <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
-                    <button 
+                    <button
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -148,9 +150,9 @@ export default function FeaturedProducts() {
                           : 'bg-white hover:bg-primary hover:text-white'
                       }`}
                     >
-                      <Icon 
-                        name="HeartIcon" 
-                        size={20} 
+                      <Icon
+                        name="HeartIcon"
+                        size={20}
                         className={wishlistItems.includes(product.id) ? 'fill-current' : ''}
                       />
                     </button>
@@ -176,17 +178,16 @@ export default function FeaturedProducts() {
                         <span className="text-2xl font-bold text-primary">
                           ₹{product.discounted_price}
                         </span>
-                        <span className="text-lg text-gray-400 line-through">
-                          ₹{product.price}
-                        </span>
+                        <span className="text-lg text-gray-400 line-through">₹{product.price}</span>
                         <span className="text-sm text-green-600 font-semibold">
-                          {Math.round(((product.price - product.discounted_price) / product.price) * 100)}% OFF
+                          {Math.round(
+                            ((product.price - product.discounted_price) / product.price) * 100
+                          )}
+                          % OFF
                         </span>
                       </>
                     ) : (
-                      <span className="text-2xl font-bold text-gray-900">
-                        ₹{product.price}
-                      </span>
+                      <span className="text-2xl font-bold text-gray-900">₹{product.price}</span>
                     )}
                   </div>
 

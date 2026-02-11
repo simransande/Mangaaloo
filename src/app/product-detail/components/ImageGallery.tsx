@@ -12,19 +12,21 @@ export default function ImageGallery({ product }: ImageGalleryProps) {
   const [selectedImage, setSelectedImage] = useState(0);
 
   // Use product image or fallback
-  const images = product?.image_url ? [
-    {
-      id: 'img_1',
-      src: product.image_url,
-      alt: product.image_alt || product.name
-    }
-  ] : [
-    {
-      id: 'img_fallback',
-      src: '/assets/images/no_image.png',
-      alt: 'No image available'
-    }
-  ];
+  const images = product?.image_url
+    ? [
+        {
+          id: 'img_1',
+          src: product.image_url,
+          alt: product.image_alt || product.name,
+        },
+      ]
+    : [
+        {
+          id: 'img_fallback',
+          src: '/assets/images/no_image.png',
+          alt: 'No image available',
+        },
+      ];
 
   return (
     <div className="space-y-4">
@@ -48,8 +50,7 @@ export default function ImageGallery({ product }: ImageGalleryProps) {
               key={image.id}
               onClick={() => setSelectedImage(index)}
               className={`relative aspect-square bg-muted rounded-lg overflow-hidden transition-all ${
-                selectedImage === index
-                  ? 'ring-2 ring-primary' :'hover:ring-2 hover:ring-border'
+                selectedImage === index ? 'ring-2 ring-primary' : 'hover:ring-2 hover:ring-border'
               }`}
             >
               <AppImage

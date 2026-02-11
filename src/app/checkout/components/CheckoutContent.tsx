@@ -45,7 +45,9 @@ function CheckoutInner() {
     notes: '',
   });
 
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(
+    null
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -153,7 +155,15 @@ function CheckoutInner() {
 
   const handlePlaceOrder = async () => {
     // Validate form
-    if (!formData.fullName || !formData.email || !formData.phone || !formData.address || !formData.city || !formData.state || !formData.pincode) {
+    if (
+      !formData.fullName ||
+      !formData.email ||
+      !formData.phone ||
+      !formData.address ||
+      !formData.city ||
+      !formData.state ||
+      !formData.pincode
+    ) {
       setError('Please fill in all required fields');
       return;
     }
@@ -183,31 +193,19 @@ function CheckoutInner() {
         return;
       }
 
-      // Create or update customer record with shipping address
+      // Try to get or create customer record
       let customerId = null;
       try {
-        const customerData = await customerService.upsert({
-          user_id: user.id,
-          email: formData.email,
-          full_name: formData.fullName,
-          phone: formData.phone,
-          address: formData.address,
-          city: formData.city,
-          state: formData.state,
-          postal_code: formData.pincode,
-          country: 'India',
-        });
-        customerId = customerData.id;
-        console.log('Customer record created/updated:', customerId);
-      } catch (customerErr) {
-        console.error('Error updating customer record:', customerErr);
-        // Continue with order creation even if customer update fails
+        const existingCustomer = await customerService.getByUserId(user.id);
+        customerId = existingCustomer?.id || null;
+      } catch (customerErr: any) {
+        console.log('No existing customer record found');
       }
 
       // Calculate totals
       const subtotal = cartItems.reduce((sum, item) => {
         const price = item.discountedPrice || item.price;
-        return sum + (price * item.quantity);
+        return sum + price * item.quantity;
       }, 0);
 
       const discountAmount = appliedCoupon?.discount || 0;
@@ -232,10 +230,9 @@ function CheckoutInner() {
         status: 'pending' as const,
         items_count: cartItems.reduce((sum, item) => sum + item.quantity, 0),
         order_number: `ORD-${Date.now()}`,
-        notes: formData.notes || null,
       };
 
-      const orderItems = cartItems.map(item => ({
+      const orderItems = cartItems.map((item) => ({
         product_id: item.productId,
         product_name: item.name,
         product_image: item.image,
@@ -255,12 +252,12 @@ function CheckoutInner() {
       ecommerceTracking.purchase({
         transactionId: order.order.order_number,
         value: finalAmount,
-        items: cartItems.map(item => ({
+        items: cartItems.map((item) => ({
           id: item.productId,
           name: item.name,
           price: item.discountedPrice || item.price,
           quantity: item.quantity,
-        }))
+        })),
       });
 
       // Clear cart
@@ -273,8 +270,8 @@ function CheckoutInner() {
       // Redirect to order confirmation
       router.push(`/order-confirmation?orderId=${order.order.id}`);
     } catch (err: any) {
-      console.error('Error placing order:', err);
-      setError(err.message || 'Failed to place order. Please try again.');
+      console.error('Error placing order:', err?.message || String(err));
+      setError(err?.message || 'Failed to place order. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -308,7 +305,10 @@ function CheckoutInner() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Checkout Form */}
             <div className="lg:col-span-2">
-              <form onSubmit={handlePlaceOrder} className="bg-white rounded-xl shadow-md p-6 space-y-6">
+              <form
+                onSubmit={handlePlaceOrder}
+                className="bg-white rounded-xl shadow-md p-6 space-y-6"
+              >
                 {/* Shipping Information */}
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -444,14 +444,19 @@ function CheckoutInner() {
                       </div>
                       <div className="flex-1">
                         <h3 className="font-bold text-gray-900">Cash on Delivery (COD)</h3>
-                        <p className="text-sm text-gray-600">Pay with cash when your order is delivered</p>
+                        <p className="text-sm text-gray-600">
+                          Pay with cash when your order is delivered
+                        </p>
                       </div>
                       <Icon name="CheckCircleIcon" size={24} className="text-primary" />
                     </div>
                   </div>
                   <p className="mt-3 text-sm text-gray-600 flex items-start gap-2">
                     <Icon name="InformationCircleIcon" size={16} className="mt-0.5 flex-shrink-0" />
-                    <span>Please keep exact change ready. Our delivery partner will collect the payment at your doorstep.</span>
+                    <span>
+                      Please keep exact change ready. Our delivery partner will collect the payment
+                      at your doorstep.
+                    </span>
                   </p>
                 </div>
               </form>
@@ -482,12 +487,8 @@ function CheckoutInner() {
                         <p className="text-xs text-gray-500">
                           Qty: {item.quantity} × ₹{item.discountedPrice || item.price}
                         </p>
-                        {item.color && (
-                          <p className="text-xs text-gray-500">Color: {item.color}</p>
-                        )}
-                        {item.size && (
-                          <p className="text-xs text-gray-500">Size: {item.size}</p>
-                        )}
+                        {item.color && <p className="text-xs text-gray-500">Color: {item.color}</p>}
+                        {item.size && <p className="text-xs text-gray-500">Size: {item.size}</p>}
                       </div>
                       <div className="font-semibold">
                         ₹{((item.discountedPrice || item.price) * item.quantity).toFixed(0)}
@@ -503,7 +504,9 @@ function CheckoutInner() {
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Shipping</span>
-                    <span className={calculateShipping() === 0 ? 'text-green-600 font-semibold' : ''}>
+                    <span
+                      className={calculateShipping() === 0 ? 'text-green-600 font-semibold' : ''}
+                    >
                       {calculateShipping() === 0 ? 'FREE' : `₹${calculateShipping().toFixed(2)}`}
                     </span>
                   </div>
@@ -523,7 +526,9 @@ function CheckoutInner() {
                 <div className="border-t border-gray-200 mt-4 pt-4">
                   <div className="flex justify-between items-center mb-4">
                     <span className="text-lg font-bold text-gray-900">Total</span>
-                    <span className="text-2xl font-bold text-primary">₹{calculateTotal().toFixed(2)}</span>
+                    <span className="text-2xl font-bold text-primary">
+                      ₹{calculateTotal().toFixed(2)}
+                    </span>
                   </div>
 
                   <button

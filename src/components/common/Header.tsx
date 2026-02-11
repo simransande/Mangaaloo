@@ -39,18 +39,18 @@ export default function Header() {
     checkAuthStatus();
 
     // Listen for auth state changes
-    const { data: { subscription } } = authService.supabaseClient.auth.onAuthStateChange(
-      async (_event: any, session: any) => {
-        if (session?.user) {
-          setUser(session.user);
-          const adminStatus = await authService.isAdmin(session.user.id);
-          setIsAdmin(adminStatus);
-        } else {
-          setUser(null);
-          setIsAdmin(false);
-        }
+    const {
+      data: { subscription },
+    } = authService.supabaseClient.auth.onAuthStateChange(async (_event: any, session: any) => {
+      if (session?.user) {
+        setUser(session.user);
+        const adminStatus = await authService.isAdmin(session.user.id);
+        setIsAdmin(adminStatus);
+      } else {
+        setUser(null);
+        setIsAdmin(false);
       }
-    );
+    });
 
     return () => {
       subscription.unsubscribe();
@@ -78,7 +78,10 @@ export default function Header() {
           const localCart = localStorage.getItem('cart');
           if (localCart) {
             const cartItems = JSON.parse(localCart);
-            const totalCount = cartItems.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+            const totalCount = cartItems.reduce(
+              (sum: number, item: any) => sum + (item.quantity || 0),
+              0
+            );
             setCartCount(totalCount);
           } else {
             setCartCount(0);
@@ -141,10 +144,9 @@ export default function Header() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-        ? 'bg-white shadow-md'
-        : 'bg-white/95 backdrop-blur-sm'
-        }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled ? 'bg-white shadow-md' : 'bg-white/95 backdrop-blur-sm'
+      }`}
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
@@ -225,12 +227,12 @@ export default function Header() {
 
             {/* User Icon */}
             <Link
-              href={user ? "/user-dashboard" : "/login"}
+              href={user ? '/user-dashboard' : '/login'}
               className="hidden md:block p-2 hover:bg-gray-100 rounded-full transition-colors"
-              aria-label={user ? "Account Dashboard" : "Login"}
-              title={user ? "My Dashboard" : "Login"}
+              aria-label={user ? 'Account Dashboard' : 'Login'}
+              title={user ? 'My Dashboard' : 'Login'}
             >
-              <Icon name="UserIcon" size={22} className={user ? "text-primary" : "text-gray-900"} />
+              <Icon name="UserIcon" size={22} className={user ? 'text-primary' : 'text-gray-900'} />
             </Link>
 
             {/* Mobile Menu Button */}
@@ -239,10 +241,7 @@ export default function Header() {
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               aria-label="Toggle menu"
             >
-              <Icon
-                name={isMobileMenuOpen ? 'XMarkIcon' : 'Bars3Icon'}
-                size={24}
-              />
+              <Icon name={isMobileMenuOpen ? 'XMarkIcon' : 'Bars3Icon'} size={24} />
             </button>
           </div>
         </div>
@@ -272,11 +271,11 @@ export default function Header() {
                 </Link>
               )}
               <Link
-                href={user ? "/user-dashboard" : "/login"}
+                href={user ? '/user-dashboard' : '/login'}
                 className="text-base font-medium text-gray-900 hover:text-primary transition-colors py-2"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                {user ? "My Dashboard" : "Login / Register"}
+                {user ? 'My Dashboard' : 'Login / Register'}
               </Link>
             </nav>
           </div>

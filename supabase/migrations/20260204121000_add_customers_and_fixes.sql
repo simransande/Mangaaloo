@@ -162,6 +162,7 @@ EXECUTE FUNCTION public.update_customer_stats();
 ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
 
 -- Admin can view all customers
+DROP POLICY IF EXISTS "Admin can view all customers" ON public.customers;
 CREATE POLICY "Admin can view all customers"
 ON public.customers
 FOR SELECT
@@ -174,6 +175,7 @@ USING (
 );
 
 -- Admin can insert customers
+DROP POLICY IF EXISTS "Admin can insert customers" ON public.customers;
 CREATE POLICY "Admin can insert customers"
 ON public.customers
 FOR INSERT
@@ -186,6 +188,7 @@ WITH CHECK (
 );
 
 -- Admin can update customers
+DROP POLICY IF EXISTS "Admin can update customers" ON public.customers;
 CREATE POLICY "Admin can update customers"
 ON public.customers
 FOR UPDATE
@@ -198,12 +201,14 @@ USING (
 );
 
 -- Users can view their own customer record
+DROP POLICY IF EXISTS "Users can view own customer record" ON public.customers;
 CREATE POLICY "Users can view own customer record"
 ON public.customers
 FOR SELECT
 USING (user_id = auth.uid());
 
 -- Users can update their own customer record
+DROP POLICY IF EXISTS "Users can update own customer record" ON public.customers;
 CREATE POLICY "Users can update own customer record"
 ON public.customers
 FOR UPDATE

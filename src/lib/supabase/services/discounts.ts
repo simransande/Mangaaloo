@@ -120,10 +120,7 @@ export const discountService = {
 
   // Delete discount (admin only)
   async delete(id: string) {
-    const { error } = await supabaseClient
-      .from('discounts')
-      .delete()
-      .eq('id', id);
+    const { error } = await supabaseClient.from('discounts').delete().eq('id', id);
 
     if (error) throw error;
   },

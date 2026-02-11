@@ -15,7 +15,13 @@ interface CartItemsProps {
 
 export default function CartItems({ items, onUpdateCart }: CartItemsProps) {
   const { showToast } = useToast();
-  const updateQuantity = async (cartItemId: string, productId: string, newQuantity: number, color: string, size: string) => {
+  const updateQuantity = async (
+    cartItemId: string,
+    productId: string,
+    newQuantity: number,
+    color: string,
+    size: string
+  ) => {
     // Ensure quantity is valid
     if (newQuantity < 1) {
       console.warn('Invalid quantity:', newQuantity);
@@ -177,7 +183,9 @@ export default function CartItems({ items, onUpdateCart }: CartItemsProps) {
               <div className="flex justify-between items-center mt-4">
                 <div className="flex items-center border border-border rounded-lg">
                   <button
-                    onClick={() => updateQuantity(item.id, item.id, item.quantity - 1, item.color, item.size)}
+                    onClick={() =>
+                      updateQuantity(item.id, item.id, item.quantity - 1, item.color, item.size)
+                    }
                     className="px-3 py-2 hover:bg-muted transition-colors disabled:opacity-50"
                     disabled={item.quantity <= 1}
                   >
@@ -195,7 +203,9 @@ export default function CartItems({ items, onUpdateCart }: CartItemsProps) {
                     max={item.stock}
                   />
                   <button
-                    onClick={() => updateQuantity(item.id, item.id, item.quantity + 1, item.color, item.size)}
+                    onClick={() =>
+                      updateQuantity(item.id, item.id, item.quantity + 1, item.color, item.size)
+                    }
                     className="px-3 py-2 hover:bg-muted transition-colors disabled:opacity-50"
                     disabled={item.quantity >= item.stock}
                   >

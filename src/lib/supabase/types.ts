@@ -5,7 +5,15 @@ export type StockStatus = 'in-stock' | 'low-stock' | 'out-of-stock';
 export type DiscountType = 'percentage' | 'fixed';
 export type ReviewStatus = 'pending' | 'approved' | 'rejected';
 export type ReturnStatus = 'pending' | 'approved' | 'rejected' | 'refunded' | 'cancelled';
-export type ReturnReason = 'defective' | 'wrong_item' | 'size_issue' | 'quality_issue' | 'not_as_described' | 'changed_mind' | 'damaged_in_transit' | 'other';
+export type ReturnReason =
+  | 'defective'
+  | 'wrong_item'
+  | 'size_issue'
+  | 'quality_issue'
+  | 'not_as_described'
+  | 'changed_mind'
+  | 'damaged_in_transit'
+  | 'other';
 export type PaymentMethod = 'cod' | 'online';
 
 // Table Types

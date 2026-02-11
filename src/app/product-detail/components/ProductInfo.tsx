@@ -34,7 +34,7 @@ export default function ProductInfo({ productId }: ProductInfoProps) {
       setLoading(true);
       const products = await productService.getAll();
       if (products && products.length > 0) {
-        const prod = productId ? products.find(p => p.id === productId) : products[0];
+        const prod = productId ? products.find((p) => p.id === productId) : products[0];
         if (prod) {
           setProduct(prod);
           // Set default selections
@@ -89,9 +89,7 @@ export default function ProductInfo({ productId }: ProductInfoProps) {
 
         const existingItemIndex = cartItems.findIndex(
           (item: any) =>
-            item.id === product.id &&
-            item.color === selectedColor &&
-            item.size === selectedSize
+            item.id === product.id && item.color === selectedColor && item.size === selectedSize
         );
 
         if (existingItemIndex !== -1) {
@@ -146,7 +144,7 @@ export default function ProductInfo({ productId }: ProductInfoProps) {
 
     // Check if user is logged in
     try {
-      let user = await authService.getCurrentUser();
+      const user = await authService.getCurrentUser();
       if (!user) {
         // Save product to cart first
         await handleAddToCart();
@@ -185,9 +183,7 @@ export default function ProductInfo({ productId }: ProductInfoProps) {
     <div className="space-y-6">
       {/* Product Title */}
       <div>
-        <h1 className="font-heading font-bold text-3xl md:text-4xl mb-2">
-          {product.name}
-        </h1>
+        <h1 className="font-heading font-bold text-3xl md:text-4xl mb-2">{product.name}</h1>
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-1">
             {[...Array(5)].map((_, i) => (
@@ -200,9 +196,7 @@ export default function ProductInfo({ productId }: ProductInfoProps) {
               />
             ))}
           </div>
-          <span className="text-sm text-muted-foreground">
-            (124 reviews)
-          </span>
+          <span className="text-sm text-muted-foreground">(124 reviews)</span>
         </div>
       </div>
 
@@ -213,9 +207,7 @@ export default function ProductInfo({ productId }: ProductInfoProps) {
         </span>
         {product.discounted_price && (
           <>
-            <span className="text-2xl text-muted-foreground line-through">
-              ₹{product.price}
-            </span>
+            <span className="text-2xl text-muted-foreground line-through">₹{product.price}</span>
             <span className="px-3 py-1 bg-error text-error-foreground text-sm font-bold rounded-full">
               {discountPercentage}% OFF
             </span>
@@ -225,15 +217,29 @@ export default function ProductInfo({ productId }: ProductInfoProps) {
 
       {/* Stock Status */}
       <div className="flex items-center space-x-2">
-        <div className={`w-2 h-2 rounded-full animate-pulse ${product.stock_status === 'in-stock' ? 'bg-success' :
-          product.stock_status === 'low-stock' ? 'bg-yellow-500' : 'bg-red-500'
-          }`}></div>
-        <span className={`text-sm font-semibold ${product.stock_status === 'in-stock' ? 'text-success' :
-          product.stock_status === 'low-stock' ? 'text-yellow-600' : 'text-red-600'
-          }`}>
-          {product.stock_status === 'in-stock' ? 'In Stock - Ships in 24 hours' :
-            product.stock_status === 'low-stock' ? `Low Stock - Only ${product.stock_quantity} left` :
-              'Out of Stock'}
+        <div
+          className={`w-2 h-2 rounded-full animate-pulse ${
+            product.stock_status === 'in-stock'
+              ? 'bg-success'
+              : product.stock_status === 'low-stock'
+                ? 'bg-yellow-500'
+                : 'bg-red-500'
+          }`}
+        ></div>
+        <span
+          className={`text-sm font-semibold ${
+            product.stock_status === 'in-stock'
+              ? 'text-success'
+              : product.stock_status === 'low-stock'
+                ? 'text-yellow-600'
+                : 'text-red-600'
+          }`}
+        >
+          {product.stock_status === 'in-stock'
+            ? 'In Stock - Ships in 24 hours'
+            : product.stock_status === 'low-stock'
+              ? `Low Stock - Only ${product.stock_quantity} left`
+              : 'Out of Stock'}
         </span>
       </div>
 
@@ -253,9 +259,11 @@ export default function ProductInfo({ productId }: ProductInfoProps) {
               <button
                 key={`color_${index}`}
                 onClick={() => setSelectedColor(color)}
-                className={`px-4 py-2 border-2 rounded-lg transition-all hover:scale-105 ${selectedColor === color
-                  ? 'border-primary bg-primary/10 scale-105' : 'border-border hover:border-primary'
-                  }`}
+                className={`px-4 py-2 border-2 rounded-lg transition-all hover:scale-105 ${
+                  selectedColor === color
+                    ? 'border-primary bg-primary/10 scale-105'
+                    : 'border-border hover:border-primary'
+                }`}
               >
                 <span className="font-medium">{color}</span>
               </button>
@@ -275,10 +283,11 @@ export default function ProductInfo({ productId }: ProductInfoProps) {
               <button
                 key={`size_${index}`}
                 onClick={() => setSelectedSize(size)}
-                className={`px-4 py-3 border rounded-lg text-sm font-semibold transition-all ${selectedSize === size
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'border-border hover:border-primary'
-                  }`}
+                className={`px-4 py-3 border rounded-lg text-sm font-semibold transition-all ${
+                  selectedSize === size
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'border-border hover:border-primary'
+                }`}
               >
                 {size}
               </button>
@@ -302,7 +311,9 @@ export default function ProductInfo({ productId }: ProductInfoProps) {
               type="number"
               value={quantity}
               onChange={(e) =>
-                setQuantity(Math.max(1, Math.min(product.stock_quantity, parseInt(e.target.value) || 1)))
+                setQuantity(
+                  Math.max(1, Math.min(product.stock_quantity, parseInt(e.target.value) || 1))
+                )
               }
               className="w-16 text-center font-semibold outline-none"
             />
@@ -342,16 +353,13 @@ export default function ProductInfo({ productId }: ProductInfoProps) {
           </button>
           <button
             onClick={() => setIsWishlisted(!isWishlisted)}
-            className={`px-4 py-3 border-2 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 ${isWishlisted
-              ? 'border-error bg-error text-error-foreground'
-              : 'border-border hover:border-error'
-              }`}
+            className={`px-4 py-3 border-2 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 ${
+              isWishlisted
+                ? 'border-error bg-error text-error-foreground'
+                : 'border-border hover:border-error'
+            }`}
           >
-            <Icon
-              name="HeartIcon"
-              size={20}
-              variant={isWishlisted ? 'solid' : 'outline'}
-            />
+            <Icon name="HeartIcon" size={20} variant={isWishlisted ? 'solid' : 'outline'} />
             <span>{isWishlisted ? 'Wishlisted' : 'Wishlist'}</span>
           </button>
         </div>

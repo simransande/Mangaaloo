@@ -28,7 +28,12 @@ export default function Footer() {
   ];
 
   const socialLinks = [
-    { id: 'social_instagram', icon: 'instagram', href: 'https://instagram.com', label: 'Instagram' },
+    {
+      id: 'social_instagram',
+      icon: 'instagram',
+      href: 'https://instagram.com',
+      label: 'Instagram',
+    },
     { id: 'social_youtube', icon: 'youtube', href: 'https://youtube.com', label: 'YouTube' },
     { id: 'social_twitter', icon: 'twitter', href: 'https://twitter.com', label: 'Twitter' },
   ];
@@ -40,9 +45,7 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
           {/* Shop Links */}
           <div>
-            <h3 className="font-heading font-bold text-sm uppercase mb-4">
-              Shop
-            </h3>
+            <h3 className="font-heading font-bold text-sm uppercase mb-4">Shop</h3>
             <ul className="space-y-2">
               {shopLinks?.map((link) => (
                 <li key={link?.id}>
@@ -59,9 +62,7 @@ export default function Footer() {
 
           {/* Support Links */}
           <div>
-            <h3 className="font-heading font-bold text-sm uppercase mb-4">
-              Support
-            </h3>
+            <h3 className="font-heading font-bold text-sm uppercase mb-4">Support</h3>
             <ul className="space-y-2">
               {supportLinks?.map((link) => (
                 <li key={link?.id}>
@@ -78,9 +79,7 @@ export default function Footer() {
 
           {/* Company Links */}
           <div>
-            <h3 className="font-heading font-bold text-sm uppercase mb-4">
-              Company
-            </h3>
+            <h3 className="font-heading font-bold text-sm uppercase mb-4">Company</h3>
             <ul className="space-y-2">
               {companyLinks?.map((link) => (
                 <li key={link?.id}>
@@ -97,9 +96,7 @@ export default function Footer() {
 
           {/* Contact Info */}
           <div>
-            <h3 className="font-heading font-bold text-sm uppercase mb-4">
-              Contact
-            </h3>
+            <h3 className="font-heading font-bold text-sm uppercase mb-4">Contact</h3>
             <ul className="space-y-2 text-sm text-secondary-foreground/80">
               <li className="flex items-center space-x-2">
                 <Icon name="PhoneIcon" size={16} />

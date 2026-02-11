@@ -66,16 +66,14 @@ export default function SocialProof() {
         <div className="text-center mb-12">
           <h2
             className={`font-heading font-bold text-4xl md:text-5xl mb-4 transition-all duration-1000 ${
-              isVisible
-                ? 'opacity-100 translate-y-0' :'opacity-0 translate-y-10'
+              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
             }`}
           >
             What Our Customers Say
           </h2>
           <p
             className={`text-muted-foreground max-w-2xl mx-auto transition-all duration-1000 delay-100 ${
-              isVisible
-                ? 'opacity-100 translate-y-0' :'opacity-0 translate-y-10'
+              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
             }`}
           >
             Join thousands of happy customers
@@ -88,8 +86,7 @@ export default function SocialProof() {
             <div
               key={testimonial.id}
               className={`glass-panel p-6 rounded-2xl transition-all duration-1000 ${
-                isVisible
-                  ? 'opacity-100 translate-y-0' :'opacity-0 translate-y-10'
+                isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
               }`}
               style={{ transitionDelay: `${(index + 2) * 150}ms` }}
             >
@@ -108,16 +105,14 @@ export default function SocialProof() {
 
               {/* Comment */}
               <p className="text-foreground mb-4 leading-relaxed">
-                "{testimonial.comment}"
+                &quot;{testimonial.comment}&quot;
               </p>
 
               {/* Author */}
               <div className="flex justify-between items-center">
                 <div>
                   <div className="font-semibold">{testimonial.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {testimonial.date}
-                  </div>
+                  <div className="text-xs text-muted-foreground">{testimonial.date}</div>
                 </div>
                 <Icon name="CheckBadgeIcon" size={24} variant="solid" className="text-success" />
               </div>
@@ -128,8 +123,7 @@ export default function SocialProof() {
         {/* Stats */}
         <div
           className={`grid grid-cols-2 md:grid-cols-4 gap-6 transition-all duration-1000 delay-500 ${
-            isVisible
-              ? 'opacity-100 translate-y-0' :'opacity-0 translate-y-10'
+            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
           }`}
         >
           <div className="text-center">
